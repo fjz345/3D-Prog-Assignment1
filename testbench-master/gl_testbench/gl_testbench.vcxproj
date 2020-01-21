@@ -75,8 +75,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)\include\10.0.18362.0\shared;$(SolutionDir)\include\10.0.18362.0\um;..\include;..\GLEW\include;..\SDL\include;$(IncludePath);..\</IncludePath>
-    <LibraryPath>$(SolutionDir)\lib\10.0.18362.0\um;..\GLEW\lib\Release\x64;..\SDL\lib\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>..\include;..\GLEW\include;..\SDL\include;$(IncludePath);..\;</IncludePath>
+    <LibraryPath>..\GLEW\lib\Release\x64;..\SDL\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -107,12 +107,10 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ProgramDataBaseFileName>$(TEMP)vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3d12.lib;dxgi.lib;d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -175,9 +173,7 @@
     <ClCompile Include="Transform.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\include\d3dx12.h" />
     <ClInclude Include="..\include\stb_image.h" />
-    <ClInclude Include="..\include\stdafx.h" />
     <ClInclude Include="ConstantBuffer.h" />
     <ClInclude Include="OpenGL\ConstantBufferGL.h" />
     <ClInclude Include="OpenGL\MaterialGL.h" />

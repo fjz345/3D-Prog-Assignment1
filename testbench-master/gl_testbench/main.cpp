@@ -10,8 +10,6 @@
 #include "Texture2D.h"
 #include <math.h>
 
-#include "stdafx.h"
-
 using namespace std;
 Renderer* renderer;
 
