@@ -1,4 +1,3 @@
-
 // buffer inputs
 #ifdef NORMAL
 	layout(binding=NORMAL) buffer nor { vec4 normal_in[]; };

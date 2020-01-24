@@ -16,6 +16,9 @@
     <Filter Include="Source Files\OpenGL">
       <UniqueIdentifier>{7fda8481-d7dd-4a62-a90b-96d3f03f423b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\DX12">
+      <UniqueIdentifier>{77615332-fc69-4bd4-a720-a0ee01981488}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -86,6 +89,36 @@
     </ClCompile>
     <ClCompile Include="OpenGL\VertexBufferGL.cpp">
       <Filter>Source Files\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="DX12\ConstantBufferDX12.cpp">
+      <Filter>Source Files\DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="DX12\DX12Renderer.cpp">
+      <Filter>Source Files\DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="DX12\MaterialDX12.cpp">
+      <Filter>Source Files\DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="DX12\MeshDX12.cpp">
+      <Filter>Source Files\DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="DX12\RenderStateDX12.cpp">
+      <Filter>Source Files\DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="DX12\ResourceBindingDX12.cpp">
+      <Filter>Source Files\DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="DX12\Sampler2DDX12.cpp">
+      <Filter>Source Files\DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="DX12\Texture2DDX12.cpp">
+      <Filter>Source Files\DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="DX12\TransformDX12.cpp">
+      <Filter>Source Files\DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="DX12\VertexBufferDX12.cpp">
+      <Filter>Source Files\DX12</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -160,6 +193,42 @@
     </ClInclude>
     <ClInclude Include="OpenGL\VertexBufferGL.h">
       <Filter>Source Files\OpenGL</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12\ConstantBufferDX12.h">
+      <Filter>Source Files\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12\DX12Renderer.h">
+      <Filter>Source Files\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12\MaterialDX12.h">
+      <Filter>Source Files\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12\MeshDX12.h">
+      <Filter>Source Files\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12\RenderStateDX12.h">
+      <Filter>Source Files\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12\ResourceBindingDX12.h">
+      <Filter>Source Files\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12\Sampler2DDX12.h">
+      <Filter>Source Files\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12\Texture2DDX12.h">
+      <Filter>Source Files\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12\TransformDX12.h">
+      <Filter>Source Files\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="DX12\VertexBufferDX12.h">
+      <Filter>Source Files\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>Source Files\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="d3dx12.h">
+      <Filter>Source Files\DX12</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

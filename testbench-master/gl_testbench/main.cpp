@@ -10,6 +10,8 @@
 #include "Texture2D.h"
 #include <math.h>
 
+#include "stdafx.h"
+
 using namespace std;
 Renderer* renderer;
 
@@ -224,6 +226,7 @@ int initialiseTestbench()
 	sampler->setWrap(WRAPPING::REPEAT, WRAPPING::REPEAT);
 	fatboy->sampler = sampler;
 
+
 	textures.push_back(fatboy);
 	samplers.push_back(sampler);
 
@@ -300,12 +303,14 @@ void shutdown() {
 
 int main(int argc, char *argv[])
 {
-	renderer = Renderer::makeRenderer(Renderer::BACKEND::GL45);
+	renderer = Renderer::makeRenderer(Renderer::BACKEND::DX12);
 	renderer->initialize(800,600);
-	renderer->setWinTitle("OpenGL");
+	renderer->setWinTitle("DirectX12");
 	renderer->setClearColor(0.0, 0.1, 0.1, 1.0);
 	initialiseTestbench();
 	run();
 	shutdown();
+
+
 	return 0;
 };
