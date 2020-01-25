@@ -54,8 +54,8 @@ private:
 	void CreateSwapChain();
 	void CreateFenceAndEventHandle();
 	void CreateRenderTarget();
-	//void CreateViewport();
-	//void CreateScissorRect();
+	void CreateViewport(unsigned int width, unsigned int height);
+	void CreateScissorRect(unsigned int width, unsigned int height);
 
 	SDL_Window* window;
 	HWND wndHandle;
@@ -78,6 +78,8 @@ private:
 	ID3D12DescriptorHeap* renderTargetsHeap = nullptr;
 	ID3D12Resource1* renderTargets[NUM_SWAP_BUFFERS] = {};
 	UINT renderTargetDescriptorSize = 0;
+	D3D12_VIEWPORT viewport = {};
+	D3D12_RECT scissorRect = {};
 
 
 	

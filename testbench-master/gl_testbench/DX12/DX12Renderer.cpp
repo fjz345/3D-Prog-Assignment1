@@ -89,9 +89,9 @@ int DX12Renderer::initialize(unsigned int width, unsigned int height) {
 
 	CreateRenderTarget();
 
-	//CreateViewport();
+	CreateViewport(width, height);
 	
-	//CreateScissorRect();
+	CreateScissorRect(width, height);
 
 
 
@@ -268,7 +268,7 @@ void DX12Renderer::CreateSwapChain()
 		nullptr,
 		&swapChain1)))
 	{
-		// TODO: Fatta vad detta gör
+		// TODO: Fatta vad detta gï¿½r
 		if (SUCCEEDED(swapChain1->QueryInterface(IID_PPV_ARGS(&swapChain3))))
 		{
 			swapChain3->Release();
@@ -292,28 +292,46 @@ void DX12Renderer::CreateRenderTarget()
 {
 	// Fill out descriptor for the render target views
 	D3D12_DESCRIPTOR_HEAP_DESC dhd = {};
-	// TODO: Varför skickar man upp två st (front/backbuffers) samtidigt?
+	// TODO: Varfï¿½r skickar man upp tvï¿½ st (front/backbuffers) samtidigt?
 	dhd.NumDescriptors = NUM_SWAP_BUFFERS;
 	dhd.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 
-	// TODO: När läggs denna Heapen "in i GPU minnet?" , och när lägger man in dom andra sakerna.. ex CBV, SRV
+	// TODO: Nï¿½r lï¿½ggs denna Heapen "in i GPU minnet?" , och nï¿½r lï¿½gger man in dom andra sakerna.. ex CBV, SRV
 	auto hr = device5->CreateDescriptorHeap(&dhd, IID_PPV_ARGS(&renderTargetsHeap));
 
 	renderTargetDescriptorSize = device5->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
-	// TODO: Vad gör raden...? Vi tror att den "hämtar startplatsen" där heapen börjar på GPU'n
+	// TODO: Vad gï¿½r raden...? Vi tror att den "hï¿½mtar startplatsen" dï¿½r heapen bï¿½rjar pï¿½ GPU'n
 	// OBS(Finns en GetGPU....) funktion
 	D3D12_CPU_DESCRIPTOR_HANDLE cdh = renderTargetsHeap->GetCPUDescriptorHandleForHeapStart();
 
 	// One RTV for each frame
 	for (UINT n = 0; n < NUM_SWAP_BUFFERS; n++)
 	{
-		// Sätter en pekare till våran rendertarget från swapchain. Så att swapchain vet vilken RTV den har.
+		// Sï¿½tter en pekare till vï¿½ran rendertarget frï¿½n swapchain. Sï¿½ att swapchain vet vilken RTV den har.
 		hr = swapChain3->GetBuffer(n, IID_PPV_ARGS(&renderTargets[n]));
 		device5->CreateRenderTargetView(renderTargets[n], nullptr, cdh);
 		cdh.ptr += renderTargetDescriptorSize;
 	}
 	
+}
+
+void DX12Renderer::CreateViewport(unsigned int width, unsigned int height)
+{
+	viewport.TopLeftX = 0.0f;
+	viewport.TopLeftY = 0.0f;
+	viewport.Width = (float)width;
+	viewport.Height = (float)height;
+	viewport.MinDepth = 0.0f;
+	viewport.MaxDepth = 1.0f;
+}
+
+void DX12Renderer::CreateScissorRect(unsigned int width, unsigned int height)
+{
+	scissorRect.left = (long)0;
+	scissorRect.right = (long)width;
+	scissorRect.top = (long)0;
+	scissorRect.bottom = (long)height;
 }
 
 void DX12Renderer::setClearColor(float r, float g, float b, float a)
