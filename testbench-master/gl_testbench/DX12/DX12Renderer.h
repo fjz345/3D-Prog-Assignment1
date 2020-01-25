@@ -46,14 +46,16 @@ public:
 	void present();
 
 private:
+	void WaitForGpu();
+
 	void CreateSDLWindow(unsigned int width = 640, unsigned int height = 480);
 	void CreateDXDevice();
 	void CreateCommandInterface();
 	void CreateSwapChain();
 	void CreateFenceAndEventHandle();
-	void CreateRenderTarget();
-	void CreateViewport();
-	void CreateScissorRect();
+	//void CreateRenderTarget();
+	//void CreateViewport();
+	//void CreateScissorRect();
 
 	SDL_Window* window;
 	HWND wndHandle;
@@ -66,6 +68,9 @@ private:
 	// TODO: Is this same as 4?
 	IDXGISwapChain3* swapChain3 = nullptr;
 
+	ID3D12Fence1* fence = nullptr;
+	HANDLE eventHandle = nullptr;
+	UINT64 fenceValue = 0;
 
 
 	
