@@ -53,7 +53,7 @@ private:
 	void CreateCommandInterface();
 	void CreateSwapChain();
 	void CreateFenceAndEventHandle();
-	//void CreateRenderTarget();
+	void CreateRenderTarget();
 	//void CreateViewport();
 	//void CreateScissorRect();
 
@@ -61,6 +61,7 @@ private:
 	HWND wndHandle;
 	ID3D12Device5* device5 = nullptr;
 
+	// Command Interfaces
 	ID3D12CommandQueue* commandQueue = nullptr;
 	ID3D12CommandAllocator* commandAllocator = nullptr;
 	ID3D12GraphicsCommandList3* commandList3 = nullptr;
@@ -68,9 +69,15 @@ private:
 	// TODO: Is this same as 4?
 	IDXGISwapChain3* swapChain3 = nullptr;
 
+	// Fences
 	ID3D12Fence1* fence = nullptr;
 	HANDLE eventHandle = nullptr;
 	UINT64 fenceValue = 0;
+
+	// RenderTarget
+	ID3D12DescriptorHeap* renderTargetsHeap = nullptr;
+	ID3D12Resource1* renderTargets[NUM_SWAP_BUFFERS] = {};
+	UINT renderTargetDescriptorSize = 0;
 
 
 	

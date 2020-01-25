@@ -87,7 +87,7 @@ int DX12Renderer::initialize(unsigned int width, unsigned int height) {
 
 	CreateFenceAndEventHandle();
 
-	//CreateRenderTarget();
+	CreateRenderTarget();
 
 	//CreateViewport();
 	
@@ -288,6 +288,33 @@ void DX12Renderer::CreateFenceAndEventHandle()
 	eventHandle = CreateEvent(0, false, false, 0);
 }
 
+void DX12Renderer::CreateRenderTarget()
+{
+	// Fill out descriptor for the render target views
+	D3D12_DESCRIPTOR_HEAP_DESC dhd = {};
+	// TODO: Varför skickar man upp två st (front/backbuffers) samtidigt?
+	dhd.NumDescriptors = NUM_SWAP_BUFFERS;
+	dhd.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+
+	// TODO: När läggs denna Heapen "in i GPU minnet?" , och när lägger man in dom andra sakerna.. ex CBV, SRV
+	auto hr = device5->CreateDescriptorHeap(&dhd, IID_PPV_ARGS(&renderTargetsHeap));
+
+	renderTargetDescriptorSize = device5->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+
+	// TODO: Vad gör raden...? Vi tror att den "hämtar startplatsen" där heapen börjar på GPU'n
+	// OBS(Finns en GetGPU....) funktion
+	D3D12_CPU_DESCRIPTOR_HANDLE cdh = renderTargetsHeap->GetCPUDescriptorHandleForHeapStart();
+
+	// One RTV for each frame
+	for (UINT n = 0; n < NUM_SWAP_BUFFERS; n++)
+	{
+		// Sätter en pekare till våran rendertarget från swapchain. Så att swapchain vet vilken RTV den har.
+		hr = swapChain3->GetBuffer(n, IID_PPV_ARGS(&renderTargets[n]));
+		device5->CreateRenderTargetView(renderTargets[n], nullptr, cdh);
+		cdh.ptr += renderTargetDescriptorSize;
+	}
+	
+}
 
 void DX12Renderer::setClearColor(float r, float g, float b, float a)
 {
