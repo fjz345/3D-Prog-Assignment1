@@ -54,8 +54,8 @@ private:
 	void CreateSwapChain();
 	void CreateFenceAndEventHandle();
 	//void CreateRenderTarget();
-	//void CreateViewport();
-	//void CreateScissorRect();
+	void CreateViewport(unsigned int width, unsigned int height);
+	void CreateScissorRect(unsigned int width, unsigned int height);
 
 	SDL_Window* window;
 	HWND wndHandle;
@@ -72,6 +72,8 @@ private:
 	HANDLE eventHandle = nullptr;
 	UINT64 fenceValue = 0;
 
+	D3D12_VIEWPORT viewport = {};
+	D3D12_RECT scissorRect = {};
 
 	
 	bool globalWireframeMode = false;

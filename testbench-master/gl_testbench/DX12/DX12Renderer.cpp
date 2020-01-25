@@ -89,9 +89,9 @@ int DX12Renderer::initialize(unsigned int width, unsigned int height) {
 
 	//CreateRenderTarget();
 
-	//CreateViewport();
+	CreateViewport(width, height);
 	
-	//CreateScissorRect();
+	CreateScissorRect(width, height);
 
 
 
@@ -286,6 +286,24 @@ void DX12Renderer::CreateFenceAndEventHandle()
 
 	// Event handle to use for GPU synchronization
 	eventHandle = CreateEvent(0, false, false, 0);
+}
+
+void DX12Renderer::CreateViewport(unsigned int width, unsigned int height)
+{
+	viewport.TopLeftX = 0.0f;
+	viewport.TopLeftY = 0.0f;
+	viewport.Width = (float)width;
+	viewport.Height = (float)height;
+	viewport.MinDepth = 0.0f;
+	viewport.MaxDepth = 1.0f;
+}
+
+void DX12Renderer::CreateScissorRect(unsigned int width, unsigned int height)
+{
+	scissorRect.left = (long)0;
+	scissorRect.right = (long)width;
+	scissorRect.top = (long)0;
+	scissorRect.bottom = (long)height;
 }
 
 
