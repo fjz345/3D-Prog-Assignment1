@@ -78,6 +78,8 @@ private:
 	ID3D12DescriptorHeap* renderTargetsHeap = nullptr;
 	ID3D12Resource1* renderTargets[NUM_SWAP_BUFFERS] = {};
 	UINT renderTargetDescriptorSize = 0;
+
+	// Viewport & ScissorRect
 	D3D12_VIEWPORT viewport = {};
 	D3D12_RECT scissorRect = {};
 
@@ -86,3 +88,4 @@ private:
 	bool globalWireframeMode = false;
 };
 
+// TODO: Allmänt, nästa steg... Rootsignatures & PSO's, ska man ha 1 RS per pipeline?
