@@ -87,11 +87,11 @@ int DX12Renderer::initialize(unsigned int width, unsigned int height) {
 
 	CreateFenceAndEventHandle();
 
-	CreateRenderTarget();
+	//CreateRenderTarget();
 
-	CreateViewport();
+	//CreateViewport();
 	
-	CreateScissorRect();
+	//CreateScissorRect();
 
 
 
@@ -138,6 +138,25 @@ void DX12Renderer::frame()
 void DX12Renderer::present()
 {
 	SDL_GL_SwapWindow(window);
+}
+
+void DX12Renderer::WaitForGpu()
+{
+	//WAITING FOR EACH FRAME TO COMPLETE BEFORE CONTINUING IS NOT BEST PRACTICE.
+	//This is code implemented as such for simplicity. The cpu could for example be used
+	//for other tasks to prepare the next frame while the current one is being rendered.
+
+	//Signal and increment the fence value.
+	const UINT64 oldFence = fenceValue;
+	commandQueue->Signal(fence, oldFence);
+	fenceValue++;
+
+	//Wait until command queue is done.
+	if (fence->GetCompletedValue() < oldFence)
+	{
+		fence->SetEventOnCompletion(oldFence, eventHandle);
+		WaitForSingleObject(eventHandle, INFINITE);
+	}
 }
 
 void DX12Renderer::CreateSDLWindow(unsigned int width, unsigned int height)
@@ -257,6 +276,16 @@ void DX12Renderer::CreateSwapChain()
 	}
 
 	SafeRelease(&factory);
+}
+
+void DX12Renderer::CreateFenceAndEventHandle()
+{
+	device5->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
+
+	fenceValue = 1;
+
+	// Event handle to use for GPU synchronization
+	eventHandle = CreateEvent(0, false, false, 0);
 }
 
 
