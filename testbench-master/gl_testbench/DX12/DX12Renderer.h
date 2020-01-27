@@ -12,6 +12,14 @@
 #pragma comment(lib,"SDL2.lib")
 #pragma comment(lib,"SDL2main.lib")
 
+enum
+{
+	ROOT_SIGNATURE_POS,
+	ROOT_SIGNATURE_NOR,
+	ROOT_SIGNATURE_UV,
+	ROOT_SIGNATURE_COLOUR,
+	ROOT_SIGNATURE_TRANS
+};
 
 
 class DX12Renderer : public Renderer
@@ -56,6 +64,7 @@ private:
 	void CreateRenderTarget();
 	void CreateViewport(unsigned int width, unsigned int height);
 	void CreateScissorRect(unsigned int width, unsigned int height);
+	void CreateRootSignature();
 
 	SDL_Window* window;
 	HWND wndHandle;
@@ -83,7 +92,8 @@ private:
 	D3D12_VIEWPORT viewport = {};
 	D3D12_RECT scissorRect = {};
 
-
+	// Root Discriptor
+	ID3D12RootSignature* rootSig;
 	
 	bool globalWireframeMode = false;
 };

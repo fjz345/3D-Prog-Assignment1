@@ -3,6 +3,7 @@
 #include <GL/glew.h>
 #include <vector>
 #include "ConstantBufferDX12.h"
+#include <stdafx.h>
 
 class DX12Renderer;
 
@@ -52,7 +53,6 @@ public:
 	int compileMaterial(std::string& errString);
 	int enable();
 	void disable();
-	GLuint getProgram() { return program; };
 	void setDiffuse(Color c);
 
 	// location identifies the constant buffer in a unique way
@@ -62,19 +62,12 @@ public:
 	std::map<unsigned int, ConstantBufferDX12*> constantBuffers;
 
 private:
-	// map from ShaderType to GL_VERTEX_SHADER, should be static.
-	GLuint mapShaderEnum[4];
-
-	std::string shaderNames[4];
-
-	// opengl shader object
-	GLuint shaderObjects[4] = { 0,0,0,0 };
 
 	// TODO: change to PIPELINE
 	// opengl program object
 	std::string name;
-	GLuint program;
-	int compileShader(ShaderType type, std::string& errString);
+	ID3DBlob* shaderBlobs[2]; // TYPE:VS/PS
 
+	int compileShader(ShaderType type, std::string& errString);
 };
 

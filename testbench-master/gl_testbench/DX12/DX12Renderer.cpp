@@ -60,6 +60,43 @@ Material* DX12Renderer::makeMaterial(const std::string& name) {
 }
 
 Technique* DX12Renderer::makeTechnique(Material* m, RenderState* r) {
+	
+
+	MaterialDX12 * mat = reinterpret_cast<MaterialDX12*>(m);
+	// PSO
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC gpsd = {};
+
+	auto a = mat->shaderBlobs[int(Material::ShaderType::VS)];
+
+
+
+
+	gpsd.pRootSignature = rootSig;
+	gpsd.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	gpsd.VS.pShaderBytecode = reinterpret_cast<void*>(mat->shaderBlobs[int(Material::ShaderType::VS)]->GetBufferPointer());
+	gpsd.VS.BytecodeLength = mat->shaderBlobs[int(Material::ShaderType::VS)]->GetBufferSize();
+	gpsd.PS.pShaderBytecode = reinterpret_cast<void*>(mat->shaderBlobs[int(Material::ShaderType::PS)]->GetBufferPointer());
+	gpsd.PS.BytecodeLength = mat->shaderBlobs[int(Material::ShaderType::PS)]->GetBufferSize();
+
+	//Specify render target and depthstencil usage.
+	gpsd.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	gpsd.NumRenderTargets = 1;
+
+	gpsd.SampleDesc.Count = 1;
+	gpsd.SampleMask = UINT_MAX;
+
+	//Specify rasterizer behaviour.
+	RenderStateDX12* rDX12 = reinterpret_cast<RenderStateDX12*>(r);
+	if(rDX12->IsWireframe())
+		gpsd.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	else
+		gpsd.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
+
+	gpsd.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
+
+	ID3D12PipelineState* PSO = rDX12->GetPSO();
+	device5->CreateGraphicsPipelineState(&gpsd,IID_PPV_ARGS(&PSO)); // Varför fungerar inte IID_PPV_ARGS(&rDX12->GetPSO())
+
 	Technique* t = new Technique(m, r);
 	return t;
 }
@@ -92,6 +129,8 @@ int DX12Renderer::initialize(unsigned int width, unsigned int height) {
 	CreateViewport(width, height);
 	
 	CreateScissorRect(width, height);
+
+	CreateRootSignature();
 
 
 
@@ -179,7 +218,6 @@ void DX12Renderer::CreateSDLWindow(unsigned int width, unsigned int height)
 
 void DX12Renderer::CreateDXDevice()
 {
-	// TODO: Kolla ifall Factory6
 	IDXGIFactory4* factory = nullptr;
 	IDXGIAdapter1* adapter = nullptr;
 
@@ -268,7 +306,6 @@ void DX12Renderer::CreateSwapChain()
 		nullptr,
 		&swapChain1)))
 	{
-		// TODO: Fatta vad detta g�r
 		if (SUCCEEDED(swapChain1->QueryInterface(IID_PPV_ARGS(&swapChain3))))
 		{
 			swapChain3->Release();
@@ -292,16 +329,13 @@ void DX12Renderer::CreateRenderTarget()
 {
 	// Fill out descriptor for the render target views
 	D3D12_DESCRIPTOR_HEAP_DESC dhd = {};
-	// TODO: Varf�r skickar man upp tv� st (front/backbuffers) samtidigt?
 	dhd.NumDescriptors = NUM_SWAP_BUFFERS;
 	dhd.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 
-	// TODO: N�r l�ggs denna Heapen "in i GPU minnet?" , och n�r l�gger man in dom andra sakerna.. ex CBV, SRV
 	auto hr = device5->CreateDescriptorHeap(&dhd, IID_PPV_ARGS(&renderTargetsHeap));
 
 	renderTargetDescriptorSize = device5->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
-	// TODO: Vad g�r raden...? Vi tror att den "h�mtar startplatsen" d�r heapen b�rjar p� GPU'n
 	// OBS(Finns en GetGPU....) funktion
 	D3D12_CPU_DESCRIPTOR_HANDLE cdh = renderTargetsHeap->GetCPUDescriptorHandleForHeapStart();
 
@@ -332,6 +366,86 @@ void DX12Renderer::CreateScissorRect(unsigned int width, unsigned int height)
 	scissorRect.right = (long)width;
 	scissorRect.top = (long)0;
 	scissorRect.bottom = (long)height;
+}
+
+void DX12Renderer::CreateRootSignature()
+{
+	// TODO: Varför descriptorheap för varje back/front buffer? Om man har 1 så slipper man sätta om allt.
+	// Jockes förslag: Multitrådat -> kan sätta descirptorheapen framen innan.
+
+	// TODO: One Table which holds three CBV's  ???
+	D3D12_DESCRIPTOR_RANGE dtRanges[3];
+	dtRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+	dtRanges[0].NumDescriptors = 3; //only one CB in this example	// TODO: Vad är detta?
+	dtRanges[0].BaseShaderRegister = ROOT_SIGNATURE_POS; //register b0
+	dtRanges[0].RegisterSpace = 0; //register(b0,space0);
+	dtRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+	dtRanges[1].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+	dtRanges[1].NumDescriptors = 3; //only one CB in this example
+	dtRanges[1].BaseShaderRegister = ROOT_SIGNATURE_NOR; //register b1
+	dtRanges[1].RegisterSpace = 0; //register(b0,space0);
+	dtRanges[1].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+	dtRanges[2].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+	dtRanges[2].NumDescriptors = 3; //only one CB in this example
+	dtRanges[2].BaseShaderRegister = ROOT_SIGNATURE_UV; //register b2
+	dtRanges[2].RegisterSpace = 0; //register(b0,space0);
+	dtRanges[2].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+	// Create Descriptor table with range above
+	D3D12_ROOT_DESCRIPTOR_TABLE dt;
+	dt.NumDescriptorRanges = ARRAYSIZE(dtRanges);
+	dt.pDescriptorRanges = dtRanges;
+
+	// Two Root descriptors to hold 2 separate CBV's (Color / Translation)
+	D3D12_ROOT_DESCRIPTOR rootDescColor;
+	rootDescColor.ShaderRegister = ROOT_SIGNATURE_COLOUR;
+	rootDescColor.RegisterSpace = 0;
+
+	D3D12_ROOT_DESCRIPTOR rootDescTrans;
+	rootDescTrans.ShaderRegister = ROOT_SIGNATURE_TRANS;
+	rootDescTrans.RegisterSpace = 0;
+
+	D3D12_ROOT_PARAMETER rootParam[3];
+	rootParam[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	rootParam[0].DescriptorTable = dt;
+	rootParam[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // TODO: Bara UV/NORMAL behövs i fragment-shader
+
+	rootParam[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParam[1].Descriptor = rootDescColor;
+	rootParam[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+	rootParam[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParam[2].Descriptor = rootDescTrans;
+	rootParam[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+
+	D3D12_ROOT_SIGNATURE_DESC rsDesc;
+	rsDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_NONE;	// We dont use input layout... 
+	rsDesc.NumParameters = ARRAYSIZE(rootParam);
+	rsDesc.pParameters = rootParam;
+	rsDesc.NumStaticSamplers = 0;	// TODO: Ändra till 1 sen när vi har en texture?
+	rsDesc.pStaticSamplers = nullptr;	// Vad händer här?
+
+	/* 
+	// TODO: Vad gör SerializeRootSignature?
+	ID3DBlob* sBlob;
+
+	TODO: Serialize rootsignature returnerar E_INVALIDARG One or more arguments are invalid.
+	auto result = D3D12SerializeRootSignature(
+		&rsDesc,
+		D3D_ROOT_SIGNATURE_VERSION_1,
+		&sBlob,
+		nullptr);
+
+	device5->CreateRootSignature(
+		0,
+		sBlob->GetBufferPointer(),
+		sBlob->GetBufferSize(),
+		IID_PPV_ARGS(&rootSig));
+
+		*/
+
 }
 
 void DX12Renderer::setClearColor(float r, float g, float b, float a)
