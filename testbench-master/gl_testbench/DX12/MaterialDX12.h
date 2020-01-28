@@ -1,9 +1,12 @@
 #pragma once
 #include "../Material.h"
 #include <GL/glew.h>
-#include <vector>
 #include "ConstantBufferDX12.h"
 #include <stdafx.h>
+
+#include <vector>
+#include <iterator>
+#include <iostream>
 
 class DX12Renderer;
 
@@ -69,5 +72,7 @@ private:
 	ID3DBlob* shaderBlobs[2]; // TYPE:VS/PS
 
 	int compileShader(ShaderType type, std::string& errString);
+
+	void SplitDefineString(std::string defineString, std::vector<D3D_SHADER_MACRO> &shaderMacro, std::vector<std::string> &vstrings);
 };
 

@@ -73,16 +73,19 @@ int MaterialDX12::compileShader(ShaderType type, std::string& errString)
 	auto it = shaderDefines[type].begin();
 	std::string defines = (*it);
 
-	// TODO: Fixa macro
-	D3D_SHADER_MACRO shaderMacro;
-	shaderMacro.Name = defines.c_str();
-	shaderMacro.Definition = "";
+	// Split Define string and put result into shaderMacro
+	std::vector<D3D_SHADER_MACRO> shaderMacro;
+	std::stringstream ss(defines);
+	std::istream_iterator<std::string> begin(ss);
+	std::istream_iterator<std::string> end;
+	std::vector<std::string> vstrings(begin, end);
+	SplitDefineString(defines, shaderMacro, vstrings);
 
 	ID3DBlob* errorMessages = nullptr;
 	
 	auto hr = D3DCompileFromFile(
 		name, // filename
-		nullptr,		// optional macros
+		shaderMacro.data(),		// optional macros
 		nullptr,		// optional include files
 		entryPoint.c_str(),		// entry point
 		shaderModelTarget.c_str(),		// shader model (target)
@@ -102,6 +105,15 @@ int MaterialDX12::compileShader(ShaderType type, std::string& errString)
 	}
 
 	return 0;
+}
+
+void MaterialDX12::SplitDefineString(std::string defineString, std::vector<D3D_SHADER_MACRO> &shaderMacro, std::vector<std::string> &vstrings)
+{
+	for (unsigned int i = 0; i < vstrings.size(); i += 3)
+	{
+		shaderMacro.push_back({ vstrings[i + 1].c_str(), vstrings[i + 2].c_str() });
+	}
+	shaderMacro.push_back({ NULL, NULL });
 }
 
 int MaterialDX12::compileMaterial(std::string& errString)
