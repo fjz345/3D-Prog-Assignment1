@@ -1,4 +1,6 @@
 *.obj
+*.tlog
+*.log
 *.idb
 *.pdb
 *.exe
@@ -7,6 +9,5 @@
 *.*~
 \.vs
 \.git
-Debug*
 *.opendb
 testbench-master/uml.png
