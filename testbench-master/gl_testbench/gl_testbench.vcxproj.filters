@@ -19,6 +19,12 @@
     <Filter Include="Source Files\DX12">
       <UniqueIdentifier>{77615332-fc69-4bd4-a720-a0ee01981488}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\GLSL">
+      <UniqueIdentifier>{0962e91b-851f-4cbc-a8d1-aaa89382a192}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\HLSL">
+      <UniqueIdentifier>{fa9d57c6-a30a-4561-9ab2-af34812e286c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -233,10 +239,18 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\assets\GL45\FragmentShader.glsl">
-      <Filter>Resource Files</Filter>
+      <Filter>Resource Files\GLSL</Filter>
     </None>
     <None Include="..\assets\GL45\VertexShader.glsl">
-      <Filter>Resource Files</Filter>
+      <Filter>Resource Files\GLSL</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="..\assets\HLSL\FragmentShader.hlsl">
+      <Filter>Resource Files\HLSL</Filter>
+    </FxCompile>
+    <FxCompile Include="..\assets\HLSL\VertexShader.hlsl">
+      <Filter>Resource Files\HLSL</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

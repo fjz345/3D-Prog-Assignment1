@@ -1,4 +1,9 @@
-float4 PS_main( float4 input ) : SV_TARGET0
+struct VS_OUT
 {
-	return input;
+	float4 pos : SV_Position;
+};
+
+float4 PS_main(VS_OUT input) : SV_TARGET0
+{
+	return float4(0.0f, 1.0f, 0.0f, 1.0f);
 }

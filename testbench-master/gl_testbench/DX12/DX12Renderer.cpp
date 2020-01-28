@@ -66,10 +66,7 @@ Technique* DX12Renderer::makeTechnique(Material* m, RenderState* r) {
 	// PSO
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC gpsd = {};
 
-	auto a = mat->shaderBlobs[int(Material::ShaderType::VS)];
-
-
-
+	ID3DBlob* a = mat->shaderBlobs[int(Material::ShaderType::VS)];
 
 	gpsd.pRootSignature = rootSig;
 	gpsd.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
@@ -94,8 +91,8 @@ Technique* DX12Renderer::makeTechnique(Material* m, RenderState* r) {
 
 	gpsd.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
 
-	ID3D12PipelineState* PSO = rDX12->GetPSO();
-	device5->CreateGraphicsPipelineState(&gpsd,IID_PPV_ARGS(&PSO)); // Varför fungerar inte IID_PPV_ARGS(&rDX12->GetPSO())
+	ID3D12PipelineState** PSO = rDX12->GetPSO();
+	device5->CreateGraphicsPipelineState(&gpsd,IID_PPV_ARGS(PSO)); // Varför fungerar inte IID_PPV_ARGS(&rDX12->GetPSO())
 
 	Technique* t = new Technique(m, r);
 	return t;
@@ -131,25 +128,6 @@ int DX12Renderer::initialize(unsigned int width, unsigned int height) {
 	CreateScissorRect(width, height);
 
 	CreateRootSignature();
-
-
-
-	/*
-	glClearColor(1.0f, 0.0f, 0.0f, 0.0f);
-	glEnable(GL_DEPTH_TEST);
-	glDisable(GL_CULL_FACE);
-	glClearDepth(1.0f);
-	glDepthFunc(GL_LEQUAL);
-
-	glViewport(0, 0, width, height);
-
-	glewExperimental = GL_TRUE;
-	GLenum err = glewInit();
-	if (GLEW_OK != err)
-	{
-		fprintf(stderr, "Error GLEW: %s\n", glewGetErrorString(err));
-	}
-	*/
 
 	return 0;
 }
@@ -370,68 +348,38 @@ void DX12Renderer::CreateScissorRect(unsigned int width, unsigned int height)
 
 void DX12Renderer::CreateRootSignature()
 {
-	// TODO: Varför descriptorheap för varje back/front buffer? Om man har 1 så slipper man sätta om allt.
-	// Jockes förslag: Multitrådat -> kan sätta descirptorheapen framen innan.
-
 	// TODO: One Table which holds three CBV's  ???
-	D3D12_DESCRIPTOR_RANGE dtRanges[3];
-	dtRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-	dtRanges[0].NumDescriptors = 3; //only one CB in this example	// TODO: Vad är detta?
-	dtRanges[0].BaseShaderRegister = ROOT_SIGNATURE_POS; //register b0
+	D3D12_DESCRIPTOR_RANGE dtRanges[1];
+	dtRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+	dtRanges[0].NumDescriptors = 2; // 2 SRV:s
+	dtRanges[0].BaseShaderRegister = 0; //register t0
 	dtRanges[0].RegisterSpace = 0; //register(b0,space0);
 	dtRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-
-	dtRanges[1].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-	dtRanges[1].NumDescriptors = 3; //only one CB in this example
-	dtRanges[1].BaseShaderRegister = ROOT_SIGNATURE_NOR; //register b1
-	dtRanges[1].RegisterSpace = 0; //register(b0,space0);
-	dtRanges[1].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-
-	dtRanges[2].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-	dtRanges[2].NumDescriptors = 3; //only one CB in this example
-	dtRanges[2].BaseShaderRegister = ROOT_SIGNATURE_UV; //register b2
-	dtRanges[2].RegisterSpace = 0; //register(b0,space0);
-	dtRanges[2].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
 	// Create Descriptor table with range above
 	D3D12_ROOT_DESCRIPTOR_TABLE dt;
 	dt.NumDescriptorRanges = ARRAYSIZE(dtRanges);
 	dt.pDescriptorRanges = dtRanges;
 
-	// Two Root descriptors to hold 2 separate CBV's (Color / Translation)
-	D3D12_ROOT_DESCRIPTOR rootDescColor;
-	rootDescColor.ShaderRegister = ROOT_SIGNATURE_COLOUR;
-	rootDescColor.RegisterSpace = 0;
-
-	D3D12_ROOT_DESCRIPTOR rootDescTrans;
-	rootDescTrans.ShaderRegister = ROOT_SIGNATURE_TRANS;
-	rootDescTrans.RegisterSpace = 0;
-
-	D3D12_ROOT_PARAMETER rootParam[3];
+	// 2 RootParams, 1 dt->(2 SRV), 1 CBV
+	D3D12_ROOT_PARAMETER rootParam[2];
 	rootParam[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
 	rootParam[0].DescriptorTable = dt;
-	rootParam[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // TODO: Bara UV/NORMAL behövs i fragment-shader
+	rootParam[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // TODO: Fixa rätt shaderVisibility
 
 	rootParam[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-	rootParam[1].Descriptor = rootDescColor;
+	rootParam[1].Descriptor.ShaderRegister = 0;
 	rootParam[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-
-	rootParam[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-	rootParam[2].Descriptor = rootDescTrans;
-	rootParam[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
 
 	D3D12_ROOT_SIGNATURE_DESC rsDesc;
 	rsDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_NONE;	// We dont use input layout... 
 	rsDesc.NumParameters = ARRAYSIZE(rootParam);
 	rsDesc.pParameters = rootParam;
-	rsDesc.NumStaticSamplers = 0;	// TODO: Ändra till 1 sen när vi har en texture?
+	rsDesc.NumStaticSamplers = 0; // TODO: Create Static Sampler
 	rsDesc.pStaticSamplers = nullptr;	// Vad händer här?
 
-	/* 
-	// TODO: Vad gör SerializeRootSignature?
 	ID3DBlob* sBlob;
 
-	TODO: Serialize rootsignature returnerar E_INVALIDARG One or more arguments are invalid.
 	auto result = D3D12SerializeRootSignature(
 		&rsDesc,
 		D3D_ROOT_SIGNATURE_VERSION_1,
@@ -443,8 +391,6 @@ void DX12Renderer::CreateRootSignature()
 		sBlob->GetBufferPointer(),
 		sBlob->GetBufferSize(),
 		IID_PPV_ARGS(&rootSig));
-
-		*/
 
 }
 

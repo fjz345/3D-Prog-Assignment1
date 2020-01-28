@@ -15,7 +15,7 @@ public:
 
 	bool IsWireframe();
 
-	ID3D12PipelineState* GetPSO();
+	ID3D12PipelineState** GetPSO();
 
 private:
 	bool _wireframe;

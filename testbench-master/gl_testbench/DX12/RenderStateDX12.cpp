@@ -42,9 +42,9 @@ bool RenderStateDX12::IsWireframe()
 	return _wireframe;
 }
 
-ID3D12PipelineState* RenderStateDX12::GetPSO()
+ID3D12PipelineState** RenderStateDX12::GetPSO()
 {
-	return PSO;
+	return &PSO;
 }
 
 /*

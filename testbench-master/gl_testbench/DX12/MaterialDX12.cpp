@@ -80,7 +80,6 @@ int MaterialDX12::compileShader(ShaderType type, std::string& errString)
 
 	ID3DBlob* errorMessages = nullptr;
 	
-	// TODO: Hur skall basic shaders se ut?
 	auto hr = D3DCompileFromFile(
 		name, // filename
 		nullptr,		// optional macros
@@ -95,11 +94,11 @@ int MaterialDX12::compileShader(ShaderType type, std::string& errString)
 						// https://msdn.microsoft.com/en-us/library/windows/desktop/hh968107(v=vs.85).aspx
 	);
 
-	// TODO: Shaders fungerar inte
 	if (FAILED(hr) && errorMessages)
 	{
 		const char* errorMsg = (const char*)errorMessages->GetBufferPointer();
-		int a = 0;
+		// Printa i output
+		OutputDebugStringA(errorMsg);
 	}
 
 	return 0;
