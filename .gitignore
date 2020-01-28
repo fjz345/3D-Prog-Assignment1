@@ -1,0 +1,12 @@
+*.obj
+*.idb
+*.pdb
+*.exe
+*.ilk
+*.db
+*.*~
+\.vs
+\.git
+Debug*
+*.opendb
+testbench-master/uml.png
