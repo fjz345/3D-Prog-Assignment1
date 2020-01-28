@@ -84,12 +84,17 @@ Technique* DX12Renderer::makeTechnique(Material* m, RenderState* r) {
 
 	//Specify rasterizer behaviour.
 	RenderStateDX12* rDX12 = reinterpret_cast<RenderStateDX12*>(r);
-	if(rDX12->IsWireframe())
+	if (rDX12->IsWireframe())
+	{
 		gpsd.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+		gpsd.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+	}
+		
 	else
+	{
 		gpsd.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
-
-	gpsd.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
+		gpsd.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
+	}
 
 	ID3D12PipelineState** PSO = rDX12->GetPSO();
 	device5->CreateGraphicsPipelineState(&gpsd,IID_PPV_ARGS(PSO)); // Varför fungerar inte IID_PPV_ARGS(&rDX12->GetPSO())
