@@ -94,6 +94,9 @@ private:
 
 	// Root Discriptor
 	ID3D12RootSignature* rootSig;
+
+
+	int numVertexBuffers = 0;
 	
 	bool globalWireframeMode = false;
 };

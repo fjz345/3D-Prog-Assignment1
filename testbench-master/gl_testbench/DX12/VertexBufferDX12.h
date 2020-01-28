@@ -1,6 +1,7 @@
 #pragma once
 #include <GL/glew.h>
 #include "../VertexBuffer.h"
+#include <stdafx.h>
 
 class VertexBufferDX12 :
 	public VertexBuffer
@@ -14,10 +15,12 @@ public:
 	void unbind();
 	size_t getSize();
 
-	static GLuint usageMapping[3];
+	ID3D12Resource1** getVertexBufferResource();
+	D3D12_VERTEX_BUFFER_VIEW* getVertexBufferView();
 
 private:
+	ID3D12Resource1* vertexBufferResource = nullptr;
+	D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
 	size_t totalSize;
-	GLuint _handle;
 };
 
