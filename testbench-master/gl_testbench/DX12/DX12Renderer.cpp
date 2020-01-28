@@ -52,7 +52,52 @@ std::string DX12Renderer::getShaderExtension() {
 }
 
 VertexBuffer* DX12Renderer::makeVertexBuffer( size_t size, VertexBuffer::DATA_USAGE usage) {
-	return new VertexBufferDX12(size, usage);
+	D3D12_HEAP_PROPERTIES hp = {};
+	hp.Type = D3D12_HEAP_TYPE_UPLOAD;
+	hp.CreationNodeMask = 1;
+	hp.VisibleNodeMask = 1;
+
+	// TODO: Stefan, ifall man skall dynamiskt öka size, hur gör man då?
+	D3D12_RESOURCE_DESC rd = {};
+	rd.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	rd.Width = size;
+	rd.Height = 1;
+	rd.DepthOrArraySize = 1;
+	rd.MipLevels = 1;
+	rd.SampleDesc.Count = 1;
+	rd.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+
+	VertexBufferDX12* VB = new VertexBufferDX12(size, usage);
+
+	ID3D12Resource1** VBResourcePointer = VB->getVertexBufferResource();
+
+	device5->CreateCommittedResource(
+		&hp,
+		D3D12_HEAP_FLAG_NONE,
+		&rd,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(VBResourcePointer));
+	
+	// TODO: HOW TO DO THIS
+	std::string temp = "vb heap" + std::to_string(numVertexBuffers);
+	numVertexBuffers++;
+	std::wstring wtemp = std::wstring(temp.begin(), temp.end());
+	LPCWSTR name = wtemp.c_str();
+
+	(*VBResourcePointer)->SetName(name); // TODO: Vad är detta för nytta
+
+	// Initialize vertexbufferview, used in render call
+	D3D12_VERTEX_BUFFER_VIEW* VBView = VB->getVertexBufferView();
+
+	int numberOfTriangles = 100;
+
+	VBView->BufferLocation = (*VBResourcePointer)->GetGPUVirtualAddress();
+	VBView->StrideInBytes = numberOfTriangles / 100; // Hårdkodat, räkna ut stride:n på pos/norm/uv ---> 3*sizeof(float)/3*sizeof(float)/2*sizeof(float)
+	VBView->SizeInBytes = size;
+
+	return VB;
 };
 
 Material* DX12Renderer::makeMaterial(const std::string& name) {
@@ -353,10 +398,10 @@ void DX12Renderer::CreateScissorRect(unsigned int width, unsigned int height)
 
 void DX12Renderer::CreateRootSignature()
 {
-	// TODO: One Table which holds three CBV's  ???
+	// TODO: Vad exakt är en SRV, varför använder vi inte CBV:s
 	D3D12_DESCRIPTOR_RANGE dtRanges[1];
 	dtRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-	dtRanges[0].NumDescriptors = 2; // 2 SRV:s
+	dtRanges[0].NumDescriptors = 4; // 4 SRV:s
 	dtRanges[0].BaseShaderRegister = 0; //register t0
 	dtRanges[0].RegisterSpace = 0; //register(b0,space0);
 	dtRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
@@ -366,7 +411,7 @@ void DX12Renderer::CreateRootSignature()
 	dt.NumDescriptorRanges = ARRAYSIZE(dtRanges);
 	dt.pDescriptorRanges = dtRanges;
 
-	// 2 RootParams, 1 dt->(2 SRV), 1 CBV
+	// 2 RootParams, 1 dt->(4 SRV), 1 CBV
 	D3D12_ROOT_PARAMETER rootParam[2];
 	rootParam[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
 	rootParam[0].DescriptorTable = dt;
