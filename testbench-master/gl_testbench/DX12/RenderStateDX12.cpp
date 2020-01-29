@@ -11,22 +11,7 @@ RenderStateDX12::~RenderStateDX12()
 }
 
 void RenderStateDX12::set()
-{
-	// was wireframe mode already set?
-	if (*globalWireFrame == _wireframe)
-		return;
-	else
-		*globalWireFrame = _wireframe;
-
-	if (_wireframe)
-	{
-
-	}
-	else
-	{
-
-	}
-		
+{	
 }
 
 /*

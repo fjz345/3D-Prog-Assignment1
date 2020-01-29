@@ -88,6 +88,7 @@ private:
 	ID3D12DescriptorHeap* renderTargetsHeap = nullptr;
 	ID3D12Resource1* renderTargets[NUM_SWAP_BUFFERS] = {};
 	UINT renderTargetDescriptorSize = 0;
+	int currBackBuffer = 0;
 
 	// Viewport & ScissorRect
 	D3D12_VIEWPORT viewport = {};
@@ -102,6 +103,8 @@ private:
 	int numConstantBuffers = 0;
 	
 	bool globalWireframeMode = false;
+
+	std::unordered_map<Technique*, std::vector<Mesh*>> drawList2;
 };
 
 // TODO: Allmänt, nästa steg... Rootsignatures & PSO's, ska man ha 1 RS per pipeline?
