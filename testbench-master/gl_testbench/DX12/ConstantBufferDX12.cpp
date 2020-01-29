@@ -2,7 +2,7 @@
 
 ConstantBufferDX12::ConstantBufferDX12(std::string NAME, unsigned int location)
 {
-	
+	name = NAME;
 }
 
 ConstantBufferDX12::~ConstantBufferDX12()
@@ -18,7 +18,12 @@ void ConstantBufferDX12::setData(const void* data, size_t size, Material* m, uns
 
 void ConstantBufferDX12::bind(Material* m)
 {
-	
+
+}
+
+ID3D12Resource1** ConstantBufferDX12::getConstantBufferResource()
+{
+	return constantBufferResource;
 }
 
 /*
