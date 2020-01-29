@@ -40,7 +40,55 @@ Sampler2D* DX12Renderer::makeSampler2D()
 }
 
 ConstantBuffer* DX12Renderer::makeConstantBuffer(std::string NAME, unsigned int location) {
-	return new ConstantBufferDX12(NAME, location);
+	
+	
+	// TODO: Vad är detta
+	UINT cbSizeAligned = (sizeof(ConstantBuffer) + 255) & ~255;	// 256-byte aligned CB.
+
+	// TODO: Skapar heap properties efter vi har skapat heapen???????????????????
+	D3D12_HEAP_PROPERTIES heapProperties = {};
+	heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+	heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	heapProperties.CreationNodeMask = 1; //used when multi-gpu
+	heapProperties.VisibleNodeMask = 1; //used when multi-gpu
+	heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+
+	D3D12_RESOURCE_DESC resourceDesc = {};
+	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	resourceDesc.Width = cbSizeAligned;
+	resourceDesc.Height = 1;
+	resourceDesc.DepthOrArraySize = 1;
+	resourceDesc.MipLevels = 1;
+	resourceDesc.SampleDesc.Count = 1;
+	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+	ConstantBuffer* CB = new ConstantBufferDX12(NAME, location);
+	ConstantBufferDX12* CBDX12 = reinterpret_cast<ConstantBufferDX12*>(CB);
+
+	ID3D12Resource1** constantBufferResource = CBDX12->getConstantBufferResource();
+
+	//Create a resource heap, descriptor heap, and pointer to cbv for each frame
+	for (int i = 0; i < NUM_SWAP_BUFFERS; i++)
+	{
+		device5->CreateCommittedResource(
+			&heapProperties,
+			D3D12_HEAP_FLAG_NONE,
+			&resourceDesc,
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			nullptr,
+			IID_PPV_ARGS(&constantBufferResource[i])
+		);
+
+		constantBufferResource[i]->SetName(L"cb heap");
+
+		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
+		cbvDesc.BufferLocation = constantBufferResource[i]->GetGPUVirtualAddress();
+		cbvDesc.SizeInBytes = cbSizeAligned;
+		// TODO: Hur skall man offset:a heapstart
+		device5->CreateConstantBufferView(&cbvDesc, descriptorHeaps[i]->GetCPUDescriptorHandleForHeapStart());
+	}
+
+	return CB;
 }
 
 std::string DX12Renderer::getShaderPath() {
@@ -84,31 +132,6 @@ VertexBuffer* DX12Renderer::makeVertexBuffer( size_t size, VertexBuffer::DATA_US
 		nullptr,
 		IID_PPV_ARGS(VBResourcePointer));
 
-
-
-
-	/*
-	D3D12_DESCRIPTOR_HEAP_DESC dhd = {};
-	dhd.NumDescriptors = 4;
-	dhd.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-
-	ID3D12DescriptorHeap* dtHeap;
-
-	auto hr = device5->CreateDescriptorHeap(&dhd, IID_PPV_ARGS(&dtHeap));
-
-	UINT dtDescriptorSize = device5->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-	// OBS(Finns en GetGPU....) funktion
-	D3D12_CPU_DESCRIPTOR_HANDLE cdh = dtHeap->GetCPUDescriptorHandleForHeapStart();
-
-	// One RTV for each frame
-	for (UINT n = 0; n < 4; n++)
-	{
-		// Behöver en ID3D12Heap*??????
-		device5->CreatePlacedResource(, )
-		cdh.ptr += renderTargetDescriptorSize;
-	}
-	*/
 
 	
 	// TODO: HOW TO DO THIS
@@ -210,6 +233,11 @@ int DX12Renderer::initialize(unsigned int width, unsigned int height) {
 	CreateScissorRect(width, height);
 
 	CreateRootSignature();
+
+	CreateDescriptorHeap();
+
+	
+
 
 	return 0;
 }
@@ -443,8 +471,8 @@ void DX12Renderer::CreateRootSignature()
 	dt.NumDescriptorRanges = ARRAYSIZE(dtRanges);
 	dt.pDescriptorRanges = dtRanges;
 
-	// 2 RootParams, 1 dt->(4 SRV), 1 CBV
-	D3D12_ROOT_PARAMETER rootParam[2];
+	// 2 RootParams, 1 dt->(4 SRV), 2 CBV
+	D3D12_ROOT_PARAMETER rootParam[3];
 	rootParam[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
 	rootParam[0].DescriptorTable = dt;
 	rootParam[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // TODO: Fixa rätt shaderVisibility
@@ -452,6 +480,10 @@ void DX12Renderer::CreateRootSignature()
 	rootParam[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	rootParam[1].Descriptor.ShaderRegister = 0;
 	rootParam[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+	rootParam[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParam[2].Descriptor.ShaderRegister = 1;
+	rootParam[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
 	D3D12_ROOT_SIGNATURE_DESC rsDesc;
 	rsDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_NONE;	// We dont use input layout... 
@@ -474,6 +506,18 @@ void DX12Renderer::CreateRootSignature()
 		sBlob->GetBufferSize(),
 		IID_PPV_ARGS(&rootSig));
 
+}
+
+void DX12Renderer::CreateDescriptorHeap()
+{
+	for (int i = 0; i < NUM_SWAP_BUFFERS; i++)
+	{
+		D3D12_DESCRIPTOR_HEAP_DESC heapDescriptorDesc = {};
+		heapDescriptorDesc.NumDescriptors = 4 + 2; // 4 SRV, 2 CBV
+		heapDescriptorDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+		heapDescriptorDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+		device5->CreateDescriptorHeap(&heapDescriptorDesc, IID_PPV_ARGS(&descriptorHeaps[i]));
+	}
 }
 
 void DX12Renderer::setClearColor(float r, float g, float b, float a)

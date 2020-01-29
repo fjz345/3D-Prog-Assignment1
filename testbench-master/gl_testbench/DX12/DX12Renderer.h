@@ -65,6 +65,7 @@ private:
 	void CreateViewport(unsigned int width, unsigned int height);
 	void CreateScissorRect(unsigned int width, unsigned int height);
 	void CreateRootSignature();
+	void CreateDescriptorHeap();
 
 	SDL_Window* window;
 	HWND wndHandle;
@@ -95,8 +96,10 @@ private:
 	// Root Discriptor
 	ID3D12RootSignature* rootSig;
 
-
+	// TODO: Varför 1 vertexBufferResource och 2(NUM_SWAP_BUFFERS) constantBufferResource
+	ID3D12DescriptorHeap* descriptorHeaps[NUM_SWAP_BUFFERS];
 	int numVertexBuffers = 0;
+	int numConstantBuffers = 0;
 	
 	bool globalWireframeMode = false;
 };
