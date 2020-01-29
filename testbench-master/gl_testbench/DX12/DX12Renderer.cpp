@@ -52,6 +52,7 @@ std::string DX12Renderer::getShaderExtension() {
 }
 
 VertexBuffer* DX12Renderer::makeVertexBuffer( size_t size, VertexBuffer::DATA_USAGE usage) {
+
 	D3D12_HEAP_PROPERTIES hp = {};
 	hp.Type = D3D12_HEAP_TYPE_UPLOAD;
 	hp.CreationNodeMask = 1;
@@ -68,10 +69,13 @@ VertexBuffer* DX12Renderer::makeVertexBuffer( size_t size, VertexBuffer::DATA_US
 	rd.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 
 
+
+
 	VertexBufferDX12* VB = new VertexBufferDX12(size, usage);
 
 	ID3D12Resource1** VBResourcePointer = VB->getVertexBufferResource();
 
+	// TODO: Skall vi inte använda denna funktionen?
 	device5->CreateCommittedResource(
 		&hp,
 		D3D12_HEAP_FLAG_NONE,
@@ -79,6 +83,33 @@ VertexBuffer* DX12Renderer::makeVertexBuffer( size_t size, VertexBuffer::DATA_US
 		D3D12_RESOURCE_STATE_GENERIC_READ,
 		nullptr,
 		IID_PPV_ARGS(VBResourcePointer));
+
+
+
+
+	/*
+	D3D12_DESCRIPTOR_HEAP_DESC dhd = {};
+	dhd.NumDescriptors = 4;
+	dhd.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+
+	ID3D12DescriptorHeap* dtHeap;
+
+	auto hr = device5->CreateDescriptorHeap(&dhd, IID_PPV_ARGS(&dtHeap));
+
+	UINT dtDescriptorSize = device5->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+	// OBS(Finns en GetGPU....) funktion
+	D3D12_CPU_DESCRIPTOR_HANDLE cdh = dtHeap->GetCPUDescriptorHandleForHeapStart();
+
+	// One RTV for each frame
+	for (UINT n = 0; n < 4; n++)
+	{
+		// Behöver en ID3D12Heap*??????
+		device5->CreatePlacedResource(, )
+		cdh.ptr += renderTargetDescriptorSize;
+	}
+	*/
+
 	
 	// TODO: HOW TO DO THIS
 	std::string temp = "vb heap" + std::to_string(numVertexBuffers);
@@ -86,7 +117,7 @@ VertexBuffer* DX12Renderer::makeVertexBuffer( size_t size, VertexBuffer::DATA_US
 	std::wstring wtemp = std::wstring(temp.begin(), temp.end());
 	LPCWSTR name = wtemp.c_str();
 
-	(*VBResourcePointer)->SetName(name); // TODO: Vad är detta för nytta
+	(*VBResourcePointer)->SetName(name);
 
 	// Initialize vertexbufferview, used in render call
 	D3D12_VERTEX_BUFFER_VIEW* VBView = VB->getVertexBufferView();
@@ -96,6 +127,7 @@ VertexBuffer* DX12Renderer::makeVertexBuffer( size_t size, VertexBuffer::DATA_US
 	VBView->BufferLocation = (*VBResourcePointer)->GetGPUVirtualAddress();
 	VBView->StrideInBytes = numberOfTriangles / 100; // Hårdkodat, räkna ut stride:n på pos/norm/uv ---> 3*sizeof(float)/3*sizeof(float)/2*sizeof(float)
 	VBView->SizeInBytes = size;
+
 
 	return VB;
 };
