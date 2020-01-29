@@ -190,7 +190,7 @@ int DX12Renderer::initialize(unsigned int width, unsigned int height) {
 
 void DX12Renderer::submit(Mesh* mesh)
 {
-	
+	drawList2[mesh->technique].push_back(mesh);
 };
 
 /*
@@ -199,12 +199,68 @@ void DX12Renderer::submit(Mesh* mesh)
 */
 void DX12Renderer::frame()
 {
+	// Set descriptor heap
+
+	// Set root signature
+	commandList3->SetGraphicsRootSignature(rootSig);
+
+	// Set root descriptor table TODO: hjälp, förståelse
+	//commandList3->SetGraphicsRootDescriptorTable(0,
+	//	gDescriptorHeap[currBackBuffer]->GetGPUDescriptorHandleForHeapStart());
 	
+	// CBV including translate/color TODO: hjälp, förståelse
+	//commandList3->SetGraphicsRootDescriptorTable(1,
+	//	gDescriptorHeap[currBackBuffer]->GetGPUDescriptorHandleForHeapStart());
+
+	// Ändra state på front/backbuffer
+	commandList3->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
+		renderTargets[currBackBuffer],
+		D3D12_RESOURCE_STATE_PRESENT,
+		D3D12_RESOURCE_STATE_RENDER_TARGET));
+
+	// TODO: varför CPU? fattar ej helt förra gången
+	D3D12_CPU_DESCRIPTOR_HANDLE cdh = renderTargetsHeap->GetCPUDescriptorHandleForHeapStart();
+	cdh.ptr += renderTargetDescriptorSize * currBackBuffer;
+	commandList3->OMSetRenderTargets(1, &cdh, true, nullptr);
+
+	float clearColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	commandList3->ClearRenderTargetView(cdh, clearColor, 0, nullptr);
+
+	// Körs 4 gånger
+	for (auto work : drawList2)
+	{
+		// Kanske vänta på GPU...? Se sista raden innan nästa iteration med eexecuteCommandList
+
+
+		// Här inne körs SetPipelineState (first är technique)
+		work.first->enable(this);
+
+		// För varje technique som hör ihop med sina meshar
+		for (auto mesh : work.second)
+		{
+			size_t numberElements = mesh->geometryBuffers[0].numElements;
+
+			// Binda texturer här sen
+
+			// Binda vertexbuffers (vet ej hur vi gör detta nu när vi inte har input layout)
+			for (auto element : mesh->geometryBuffers) 
+			{
+				
+			}
+			// Fixa constantbuffers...
+
+			// Tror Draw ska ske här
+		}
+
+		//commandQueue->ExecuteCommandLists();
+	}
+	drawList2.clear();
 };
 
 void DX12Renderer::present()
 {
-	SDL_GL_SwapWindow(window);
+	swapChain3->Present(0, 0);
+	//SDL_GL_SwapWindow(window);
 }
 
 void DX12Renderer::WaitForGpu()
@@ -212,6 +268,8 @@ void DX12Renderer::WaitForGpu()
 	//WAITING FOR EACH FRAME TO COMPLETE BEFORE CONTINUING IS NOT BEST PRACTICE.
 	//This is code implemented as such for simplicity. The cpu could for example be used
 	//for other tasks to prepare the next frame while the current one is being rendered.
+
+	currBackBuffer = swapChain3->GetCurrentBackBufferIndex();
 
 	//Signal and increment the fence value.
 	const UINT64 oldFence = fenceValue;
@@ -451,7 +509,11 @@ void DX12Renderer::setClearColor(float r, float g, float b, float a)
 
 void DX12Renderer::clearBuffer(unsigned int flag)
 {
-	
+	WaitForGpu();
+
+	commandAllocator->Reset();
+
+	commandList3->Reset(commandAllocator, NULL);
 }
 
 //void OpenGLRenderer::setRenderTarget(RenderTarget* rt) {};
@@ -459,5 +521,9 @@ void DX12Renderer::clearBuffer(unsigned int flag)
 void DX12Renderer::setRenderState(RenderState* ps)
 {
 	// naive implementation
-	ps->set();
+	//ps->set();
+
+	RenderStateDX12 *PSODX12 = reinterpret_cast<RenderStateDX12*>(ps);
+
+	commandList3->SetPipelineState(*PSODX12->GetPSO());
 }
