@@ -4,6 +4,7 @@
 RenderStateDX12::RenderStateDX12()
 {
 	_wireframe = false;
+	PSO = nullptr;
 }
 
 RenderStateDX12::~RenderStateDX12()

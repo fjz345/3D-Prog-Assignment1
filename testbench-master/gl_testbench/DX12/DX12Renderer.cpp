@@ -145,8 +145,6 @@ Material* DX12Renderer::makeMaterial(const std::string& name) {
 }
 
 Technique* DX12Renderer::makeTechnique(Material* m, RenderState* r) {
-	
-
 	MaterialDX12 * mat = reinterpret_cast<MaterialDX12*>(m);
 	// PSO
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC gpsd = {};
@@ -182,7 +180,7 @@ Technique* DX12Renderer::makeTechnique(Material* m, RenderState* r) {
 	}
 
 	ID3D12PipelineState** PSO = rDX12->GetPSO();
-	device5->CreateGraphicsPipelineState(&gpsd,IID_PPV_ARGS(PSO)); // Varför fungerar inte IID_PPV_ARGS(&rDX12->GetPSO())
+	auto hr = device5->CreateGraphicsPipelineState(&gpsd,IID_PPV_ARGS(PSO)); // Varför fungerar inte IID_PPV_ARGS(&rDX12->GetPSO())
 
 	Technique* t = new Technique(m, r);
 	return t;
@@ -379,6 +377,27 @@ void DX12Renderer::CreateSDLWindow(unsigned int width, unsigned int height)
 
 void DX12Renderer::CreateDXDevice()
 {
+#ifdef _DEBUG
+	//Enable the D3D12 debug layer.
+	ID3D12Debug* debugController = nullptr;
+
+#ifdef STATIC_LINK_DEBUGSTUFF
+	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
+	{
+		debugController->EnableDebugLayer();
+	}
+	SafeRelease(debugController);
+#else
+	HMODULE mD3D12 = GetModuleHandle(L"D3D12.dll");
+	PFN_D3D12_GET_DEBUG_INTERFACE f = (PFN_D3D12_GET_DEBUG_INTERFACE)GetProcAddress(mD3D12, "D3D12GetDebugInterface");
+	if (SUCCEEDED(f(IID_PPV_ARGS(&debugController))))
+	{
+		debugController->EnableDebugLayer();
+	}
+	SafeRelease(&debugController);
+#endif
+#endif
+
 	IDXGIFactory4* factory = nullptr;
 	IDXGIAdapter1* adapter = nullptr;
 
@@ -405,6 +424,7 @@ void DX12Renderer::CreateDXDevice()
 	{
 		HRESULT hr = S_OK;
 		//Create the actual device.
+		// TODO: Exception thrown at ___________
 		if (SUCCEEDED(hr = D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_12_1, IID_PPV_ARGS(&device5))))
 		{
 
@@ -531,6 +551,7 @@ void DX12Renderer::CreateScissorRect(unsigned int width, unsigned int height)
 
 void DX12Renderer::CreateRootSignature()
 {
+
 	// TODO: Vad exakt är en SRV, varför använder vi inte CBV:s
 	D3D12_DESCRIPTOR_RANGE dtRanges[1];
 	dtRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
