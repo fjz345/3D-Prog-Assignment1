@@ -259,15 +259,14 @@ void DX12Renderer::frame()
 	//commandList3->SetGraphicsRootDescriptorTable(RS_TEXTURE,
 	//	descriptorHeaps[currBackBuffer]->GetGPUDescriptorHandleForHeapStart());
 	
-	auto a = (*VBPos->getVertexBufferResource());
 	// Sätter 1 triangel data.
-	commandList3->SetGraphicsRootShaderResourceView(1,
+	commandList3->SetGraphicsRootShaderResourceView(RS_POSITION,
 		(*VBPos->getVertexBufferResource())->GetGPUVirtualAddress());
 
-	commandList3->SetGraphicsRootShaderResourceView(2,
+	commandList3->SetGraphicsRootShaderResourceView(RS_NORMAL,
 		(*VBNor->getVertexBufferResource())->GetGPUVirtualAddress());
 
-	commandList3->SetGraphicsRootShaderResourceView(3,
+	commandList3->SetGraphicsRootShaderResourceView(RS_UV,
 		(*VBuv->getVertexBufferResource())->GetGPUVirtualAddress());
 
 	// Ändra state på front/backbuffer
