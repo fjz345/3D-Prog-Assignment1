@@ -109,15 +109,12 @@ VertexBuffer* DX12Renderer::makeVertexBuffer( size_t size, VertexBuffer::DATA_US
 	// TODO: Stefan, ifall man skall dynamiskt öka size, hur gör man då?
 	D3D12_RESOURCE_DESC rd = {};
 	rd.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	rd.Width = size;
+	rd.Width = size / 100; // Vi gör endast 1 triangel (inte 100 som han vill ha i sin kod)
 	rd.Height = 1;
 	rd.DepthOrArraySize = 1;
 	rd.MipLevels = 1;
 	rd.SampleDesc.Count = 1;
 	rd.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-
-
-
 
 	VertexBufferDX12* VB = new VertexBufferDX12(size, usage);
 
@@ -131,8 +128,6 @@ VertexBuffer* DX12Renderer::makeVertexBuffer( size_t size, VertexBuffer::DATA_US
 		D3D12_RESOURCE_STATE_GENERIC_READ,
 		nullptr,
 		IID_PPV_ARGS(VBResourcePointer));
-
-
 	
 	// TODO: HOW TO DO THIS
 	std::string temp = "vb heap" + std::to_string(numVertexBuffers);
@@ -141,16 +136,6 @@ VertexBuffer* DX12Renderer::makeVertexBuffer( size_t size, VertexBuffer::DATA_US
 	LPCWSTR name = wtemp.c_str();
 
 	(*VBResourcePointer)->SetName(name);
-
-	// Initialize vertexbufferview, used in render call
-	D3D12_VERTEX_BUFFER_VIEW* VBView = VB->getVertexBufferView();
-
-	int numberOfTriangles = 100;
-
-	VBView->BufferLocation = (*VBResourcePointer)->GetGPUVirtualAddress();
-	VBView->StrideInBytes = numberOfTriangles / 100; // Hårdkodat, räkna ut stride:n på pos/norm/uv ---> 3*sizeof(float)/3*sizeof(float)/2*sizeof(float)
-	VBView->SizeInBytes = size;
-
 
 	return VB;
 };
@@ -259,18 +244,31 @@ void DX12Renderer::submit(Mesh* mesh)
 */
 void DX12Renderer::frame()
 {
-	// Set descriptor heap
+	// Get the first mesh to get the triangle data for rootSig
+	Mesh* mesh = drawList2.begin()->second[0];
+
+	auto GeometryMap = mesh->geometryBuffers;
+	VertexBufferDX12* VBPos = reinterpret_cast<VertexBufferDX12*>(GeometryMap[0].buffer);
+	VertexBufferDX12* VBNor = reinterpret_cast<VertexBufferDX12*>(GeometryMap[1].buffer);
+	VertexBufferDX12* VBuv = reinterpret_cast<VertexBufferDX12*>(GeometryMap[2].buffer);
 
 	// Set root signature
 	commandList3->SetGraphicsRootSignature(rootSig);
 
 	// Set root descriptor table TODO: hjälp, förståelse
-	//commandList3->SetGraphicsRootDescriptorTable(0,
-	//	gDescriptorHeap[currBackBuffer]->GetGPUDescriptorHandleForHeapStart());
+	//commandList3->SetGraphicsRootDescriptorTable(RS_TEXTURE,
+	//	descriptorHeaps[currBackBuffer]->GetGPUDescriptorHandleForHeapStart());
 	
-	// CBV including translate/color TODO: hjälp, förståelse
-	//commandList3->SetGraphicsRootDescriptorTable(1,
-	//	gDescriptorHeap[currBackBuffer]->GetGPUDescriptorHandleForHeapStart());
+	auto a = (*VBPos->getVertexBufferResource());
+	// Sätter 1 triangel data.
+	commandList3->SetGraphicsRootShaderResourceView(1,
+		(*VBPos->getVertexBufferResource())->GetGPUVirtualAddress());
+
+	commandList3->SetGraphicsRootShaderResourceView(2,
+		(*VBNor->getVertexBufferResource())->GetGPUVirtualAddress());
+
+	commandList3->SetGraphicsRootShaderResourceView(3,
+		(*VBuv->getVertexBufferResource())->GetGPUVirtualAddress());
 
 	// Ändra state på front/backbuffer
 	commandList3->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
@@ -285,6 +283,10 @@ void DX12Renderer::frame()
 
 	float clearColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	commandList3->ClearRenderTargetView(cdh, clearColor, 0, nullptr);
+
+	commandList3->RSSetViewports(1, &viewport);
+	commandList3->RSSetScissorRects(1, &scissorRect);
+	commandList3->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	// Körs 4 gånger
 	for (auto work : drawList2)
@@ -310,10 +312,24 @@ void DX12Renderer::frame()
 			// Fixa constantbuffers...
 
 			// Tror Draw ska ske här
+
+			commandList3->DrawInstanced(3, 1, 0, 0);
 		}
 
-		//commandQueue->ExecuteCommandLists();
+		
 	}
+
+	// Ändra state på front/backbuffer
+	commandList3->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
+		renderTargets[currBackBuffer],
+		D3D12_RESOURCE_STATE_RENDER_TARGET,
+		D3D12_RESOURCE_STATE_PRESENT));
+
+	commandList3->Close();
+
+	ID3D12CommandList* listsToExecute[] = { commandList3};
+	commandQueue->ExecuteCommandLists(ARRAYSIZE(listsToExecute), listsToExecute);
+
 	drawList2.clear();
 };
 
@@ -519,7 +535,7 @@ void DX12Renderer::CreateRootSignature()
 	// TODO: Vad exakt är en SRV, varför använder vi inte CBV:s
 	D3D12_DESCRIPTOR_RANGE dtRanges[1];
 	dtRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-	dtRanges[0].NumDescriptors = 4; // 4 SRV:s
+	dtRanges[0].NumDescriptors = 1; // 1 SRV (Texture)
 	dtRanges[0].BaseShaderRegister = 0; //register t0
 	dtRanges[0].RegisterSpace = 0; //register(b0,space0);
 	dtRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
@@ -530,18 +546,30 @@ void DX12Renderer::CreateRootSignature()
 	dt.pDescriptorRanges = dtRanges;
 
 	// 2 RootParams, 1 dt->(4 SRV), 2 CBV
-	D3D12_ROOT_PARAMETER rootParam[3];
-	rootParam[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-	rootParam[0].DescriptorTable = dt;
-	rootParam[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // TODO: Fixa rätt shaderVisibility
+	D3D12_ROOT_PARAMETER rootParam[6];
+	rootParam[RS_TEXTURE].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	rootParam[RS_TEXTURE].DescriptorTable = dt;
+	rootParam[RS_TEXTURE].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // TODO: Fixa rätt shaderVisibility
 
-	rootParam[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-	rootParam[1].Descriptor.ShaderRegister = 0;
-	rootParam[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+	rootParam[RS_POSITION].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
+	rootParam[RS_POSITION].Descriptor.ShaderRegister = 1;
+	rootParam[RS_POSITION].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
-	rootParam[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-	rootParam[2].Descriptor.ShaderRegister = 1;
-	rootParam[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+	rootParam[RS_NORMAL].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
+	rootParam[RS_NORMAL].Descriptor.ShaderRegister = 2;
+	rootParam[RS_NORMAL].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+	rootParam[RS_UV].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
+	rootParam[RS_UV].Descriptor.ShaderRegister = 3;
+	rootParam[RS_UV].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+	rootParam[RS_COLOR].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParam[RS_COLOR].Descriptor.ShaderRegister = 0;
+	rootParam[RS_COLOR].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+	rootParam[RS_TRANSLATION].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParam[RS_TRANSLATION].Descriptor.ShaderRegister = 1;
+	rootParam[RS_TRANSLATION].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
 	D3D12_ROOT_SIGNATURE_DESC rsDesc;
 	rsDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_NONE;	// We dont use input layout... 
@@ -571,7 +599,7 @@ void DX12Renderer::CreateDescriptorHeap()
 	for (int i = 0; i < NUM_SWAP_BUFFERS; i++)
 	{
 		D3D12_DESCRIPTOR_HEAP_DESC heapDescriptorDesc = {};
-		heapDescriptorDesc.NumDescriptors = 4 + 2; // 4 SRV, 2 CBV
+		heapDescriptorDesc.NumDescriptors = 1; // Endast 1 textur i programmet
 		heapDescriptorDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 		heapDescriptorDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 		device5->CreateDescriptorHeap(&heapDescriptorDesc, IID_PPV_ARGS(&descriptorHeaps[i]));

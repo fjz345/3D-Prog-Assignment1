@@ -53,6 +53,15 @@ public:
 	void frame();
 	void present();
 
+	enum {
+		RS_TEXTURE,
+		RS_POSITION,
+		RS_NORMAL,
+		RS_UV,
+		RS_COLOR,
+		RS_TRANSLATION
+	};
+
 private:
 	void WaitForGpu();
 

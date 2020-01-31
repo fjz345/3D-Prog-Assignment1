@@ -25,11 +25,11 @@ VertexBufferDX12::~VertexBufferDX12()
 */
 void VertexBufferDX12::setData(const void* data, size_t size,  size_t offset)
 {
-	// check so that we are inside totalsize
-	if (size + offset > totalSize)
+	// Only do once since all triangles have same pos/norm/uv data
+	if (offset != 0)
 		return;
 
-	void* dataBegin = (char*)nullptr + offset;
+	void* dataBegin = nullptr;
 
 	// Set up the heap data
 	D3D12_RANGE range = { 0, 0 }; // We do not intend to read this resource on the CPU.
