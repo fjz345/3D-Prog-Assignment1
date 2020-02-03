@@ -328,6 +328,8 @@ void DX12Renderer::frame()
 	commandQueue->ExecuteCommandLists(ARRAYSIZE(listsToExecute), listsToExecute);
 
 	drawList2.clear();
+
+	WaitForGpu();
 };
 
 void DX12Renderer::present()
@@ -566,7 +568,7 @@ void DX12Renderer::CreateRootSignature()
 	dt.pDescriptorRanges = dtRanges;
 
 	// 2 RootParams, 1 dt->(4 SRV), 2 CBV
-	D3D12_ROOT_PARAMETER rootParam[6];
+	D3D12_ROOT_PARAMETER rootParam[6]{};	// register space var ej satt!, nu nollad
 	rootParam[RS_TEXTURE].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
 	rootParam[RS_TEXTURE].DescriptorTable = dt;
 	rootParam[RS_TEXTURE].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // TODO: Fixa rätt shaderVisibility
@@ -633,8 +635,6 @@ void DX12Renderer::setClearColor(float r, float g, float b, float a)
 
 void DX12Renderer::clearBuffer(unsigned int flag)
 {
-	WaitForGpu();
-
 	commandAllocator->Reset();
 
 	commandList3->Reset(commandAllocator, NULL);

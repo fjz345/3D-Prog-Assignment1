@@ -11,7 +11,7 @@ VS_OUT VS_main( uint vID : SV_VertexID )
 {
 	// 0:ar output
 	VS_OUT output = (VS_OUT)0;
-	float4 position = float4(vbPos[vID % 3], 1.0); // % 3 since there is only 1 vertex in each StructuredBuffer
+	float4 position = float4(vbPos[vID], 1.0);
 	output.pos = position;
 	return output;
 }
