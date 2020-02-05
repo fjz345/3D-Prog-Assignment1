@@ -188,14 +188,15 @@
   <ItemGroup>
     <ClInclude Include="..\include\stb_image.h" />
     <ClInclude Include="ConstantBuffer.h" />
-    <ClInclude Include="d3dx12.h" />
     <ClInclude Include="DX12\ConstantBufferDX12.h" />
+    <ClInclude Include="DX12\d3dx12.h" />
     <ClInclude Include="DX12\DX12Renderer.h" />
     <ClInclude Include="DX12\MaterialDX12.h" />
     <ClInclude Include="DX12\MeshDX12.h" />
     <ClInclude Include="DX12\RenderStateDX12.h" />
     <ClInclude Include="DX12\ResourceBindingDX12.h" />
     <ClInclude Include="DX12\Sampler2DDX12.h" />
+    <ClInclude Include="DX12\stdafx.h" />
     <ClInclude Include="DX12\Texture2DDX12.h" />
     <ClInclude Include="DX12\TransformDX12.h" />
     <ClInclude Include="DX12\VertexBufferDX12.h" />
@@ -211,7 +212,6 @@
     <ClInclude Include="OpenGL\VertexBufferGL.h" />
     <ClInclude Include="Sampler2D.h" />
     <ClInclude Include="Scene.h" />
-    <ClInclude Include="stdafx.h" />
     <ClInclude Include="VertexBuffer.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="IA.h" />

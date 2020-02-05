@@ -219,9 +219,6 @@ int DX12Renderer::initialize(unsigned int width, unsigned int height) {
 
 	CreateDescriptorHeap();
 
-	
-
-
 	return 0;
 }
 
@@ -242,6 +239,8 @@ void DX12Renderer::submit(Mesh* mesh)
 */
 void DX12Renderer::frame()
 {
+	currBackBuffer = swapChain3->GetCurrentBackBufferIndex();
+
 	// Get the first mesh to get the triangle data for rootSig
 	Mesh* mesh = drawList2.begin()->second[0];
 
@@ -344,7 +343,7 @@ void DX12Renderer::WaitForGpu()
 	//This is code implemented as such for simplicity. The cpu could for example be used
 	//for other tasks to prepare the next frame while the current one is being rendered.
 
-	currBackBuffer = swapChain3->GetCurrentBackBufferIndex();
+	
 
 	//Signal and increment the fence value.
 	const UINT64 oldFence = fenceValue;
@@ -400,7 +399,7 @@ void DX12Renderer::CreateDXDevice()
 #endif
 #endif
 
-	IDXGIFactory4* factory = nullptr;
+	IDXGIFactory6* factory = nullptr;
 	IDXGIAdapter1* adapter = nullptr;
 
 	CreateDXGIFactory(IID_PPV_ARGS(&factory));

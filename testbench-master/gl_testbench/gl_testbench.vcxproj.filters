@@ -230,10 +230,10 @@
     <ClInclude Include="DX12\VertexBufferDX12.h">
       <Filter>Source Files\DX12</Filter>
     </ClInclude>
-    <ClInclude Include="stdafx.h">
+    <ClInclude Include="DX12\stdafx.h">
       <Filter>Source Files\DX12</Filter>
     </ClInclude>
-    <ClInclude Include="d3dx12.h">
+    <ClInclude Include="DX12\d3dx12.h">
       <Filter>Source Files\DX12</Filter>
     </ClInclude>
   </ItemGroup>
