@@ -3,7 +3,12 @@ struct VS_OUT
 	float4 pos : SV_Position;
 };
 
+cbuffer color : register(b0)
+{
+	float r, g, b, a;
+}
+
 float4 PS_main(VS_OUT input) : SV_TARGET0
 {
-	return 1; // float4(0.0f, 1.0f, 0.0f, 1.0f);
+	return float4(r,g,b,a);
 }
