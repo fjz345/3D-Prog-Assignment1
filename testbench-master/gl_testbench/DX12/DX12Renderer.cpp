@@ -172,12 +172,20 @@ Technique* DX12Renderer::makeTechnique(Material* m, RenderState* r) {
 		gpsd.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
 		gpsd.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 	}
-		
 	else
 	{
 		gpsd.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
-		gpsd.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
+		gpsd.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 	}
+
+	//Specify blend descriptions.	TODO:: HJÄLP
+	D3D12_RENDER_TARGET_BLEND_DESC defaultRTdesc = {
+		false, false,
+		D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
+		D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
+		D3D12_LOGIC_OP_NOOP, D3D12_COLOR_WRITE_ENABLE_ALL };
+	for (UINT i = 0; i < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; i++)
+		gpsd.BlendState.RenderTarget[i] = defaultRTdesc;
 
 	ID3D12PipelineState** PSO = rDX12->GetPSO();
 	auto hr = device5->CreateGraphicsPipelineState(&gpsd,IID_PPV_ARGS(PSO)); // Varför fungerar inte IID_PPV_ARGS(&rDX12->GetPSO())
@@ -277,7 +285,7 @@ void DX12Renderer::frame()
 	cdh.ptr += renderTargetDescriptorSize * currBackBuffer;
 	commandList3->OMSetRenderTargets(1, &cdh, true, nullptr);
 
-	float clearColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	float clearColor[] = { 1.0f, 0.0f, 0.0f, 1.0f };
 	commandList3->ClearRenderTargetView(cdh, clearColor, 0, nullptr);
 
 	commandList3->RSSetViewports(1, &viewport);

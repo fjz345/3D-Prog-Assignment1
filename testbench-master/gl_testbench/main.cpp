@@ -314,3 +314,7 @@ int main(int argc, char *argv[])
 
 	return 0;
 };
+
+
+// DXTK för o läsa texture	(directx toolkit) - men har massa skräp... WIC ligger i DXTK
+// Wic för att läsa in bild från disk
