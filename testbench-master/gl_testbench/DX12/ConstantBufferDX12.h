@@ -41,7 +41,6 @@ public:
 
 private:
 	std::string name;
-	ID3D12Resource1* constantBufferResource[NUM_SWAP_BUFFERS] = {};
-	cbufferFloat4 constantBufferCPU = {};
+	ID3D12Resource1* constantBufferResource;
 };
 

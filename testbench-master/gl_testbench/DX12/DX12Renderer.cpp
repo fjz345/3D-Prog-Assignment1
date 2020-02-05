@@ -39,9 +39,8 @@ Sampler2D* DX12Renderer::makeSampler2D()
 	return (Sampler2D*)new Sampler2DDX12();
 }
 
-ConstantBuffer* DX12Renderer::makeConstantBuffer(std::string NAME, unsigned int location) {
-	
-	
+ConstantBuffer* DX12Renderer::makeConstantBuffer(std::string NAME, unsigned int location) 
+{	
 	// TODO: Vad är detta
 	UINT cbSizeAligned = (sizeof(ConstantBuffer) + 255) & ~255;	// 256-byte aligned CB.
 
@@ -55,7 +54,7 @@ ConstantBuffer* DX12Renderer::makeConstantBuffer(std::string NAME, unsigned int 
 
 	D3D12_RESOURCE_DESC resourceDesc = {};
 	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	resourceDesc.Width = cbSizeAligned;
+	resourceDesc.Width = sizeof(float) * 4;
 	resourceDesc.Height = 1;
 	resourceDesc.DepthOrArraySize = 1;
 	resourceDesc.MipLevels = 1;
@@ -67,26 +66,15 @@ ConstantBuffer* DX12Renderer::makeConstantBuffer(std::string NAME, unsigned int 
 
 	ID3D12Resource1** constantBufferResource = CBDX12->getConstantBufferResource();
 
-	//Create a resource heap, descriptor heap, and pointer to cbv for each frame
-	for (int i = 0; i < NUM_SWAP_BUFFERS; i++)
-	{
-		device5->CreateCommittedResource(
-			&heapProperties,
-			D3D12_HEAP_FLAG_NONE,
-			&resourceDesc,
-			D3D12_RESOURCE_STATE_GENERIC_READ,
-			nullptr,
-			IID_PPV_ARGS(&constantBufferResource[i])
-		);
-
-		constantBufferResource[i]->SetName(L"cb heap");
-
-		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
-		cbvDesc.BufferLocation = constantBufferResource[i]->GetGPUVirtualAddress();
-		cbvDesc.SizeInBytes = cbSizeAligned;
-		// TODO: Hur skall man offset:a heapstart
-		device5->CreateConstantBufferView(&cbvDesc, descriptorHeaps[i]->GetCPUDescriptorHandleForHeapStart());
-	}
+	device5->CreateCommittedResource(
+		&heapProperties,
+		D3D12_HEAP_FLAG_NONE,
+		&resourceDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(constantBufferResource)
+	);
+	(*constantBufferResource)->SetName(L"cb heap");
 
 	return CB;
 }
@@ -305,6 +293,10 @@ void DX12Renderer::frame()
 		for (auto mesh : work.second)
 		{
 			size_t numberElements = mesh->geometryBuffers[0].numElements;
+			
+			// Bind translation CBV
+			auto CBDX12 = reinterpret_cast<ConstantBufferDX12*>(mesh->txBuffer);
+			commandList3->SetGraphicsRootConstantBufferView(RS_TRANSLATION, (*CBDX12->getConstantBufferResource())->GetGPUVirtualAddress());
 
 			// Binda texturer här sen
 
