@@ -50,7 +50,6 @@ public:
 	MaterialDX12(const std::string& name);
 	~MaterialDX12();
 
-
 	void setShader(const std::string& shaderFileName, ShaderType type);
 	void removeShader(ShaderType type);
 	int compileMaterial(std::string& errString);

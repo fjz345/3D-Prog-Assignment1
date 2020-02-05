@@ -129,7 +129,47 @@ VertexBuffer* DX12Renderer::makeVertexBuffer( size_t size, VertexBuffer::DATA_US
 };
 
 Material* DX12Renderer::makeMaterial(const std::string& name) {
-	return new MaterialDX12(name);
+
+	MaterialDX12 * mat = new MaterialDX12(name);
+
+	int location = 6;
+	mat->constantBuffers[location] = new ConstantBufferDX12(name, location);
+
+	// TODO: Vad är detta
+	UINT cbSizeAligned = (sizeof(ConstantBuffer) + 255) & ~255;	// 256-byte aligned CB.
+
+	// TODO: Skapar heap properties efter vi har skapat heapen???????????????????
+	D3D12_HEAP_PROPERTIES heapProperties = {};
+	heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+	heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	heapProperties.CreationNodeMask = 1; //used when multi-gpu
+	heapProperties.VisibleNodeMask = 1; //used when multi-gpu
+	heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+
+	D3D12_RESOURCE_DESC resourceDesc = {};
+	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	resourceDesc.Width = sizeof(float) * 4;
+	resourceDesc.Height = 1;
+	resourceDesc.DepthOrArraySize = 1;
+	resourceDesc.MipLevels = 1;
+	resourceDesc.SampleDesc.Count = 1;
+	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+	ConstantBufferDX12* CBDX12 = reinterpret_cast<ConstantBufferDX12*>(mat->constantBuffers[location]);
+
+	ID3D12Resource1** constantBufferResource = CBDX12->getConstantBufferResource();
+
+	device5->CreateCommittedResource(
+		&heapProperties,
+		D3D12_HEAP_FLAG_NONE,
+		&resourceDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(constantBufferResource)
+	);
+	(*constantBufferResource)->SetName(L"cb heap");
+
+	return mat;
 }
 
 Technique* DX12Renderer::makeTechnique(Material* m, RenderState* r) {
@@ -273,7 +313,7 @@ void DX12Renderer::frame()
 	cdh.ptr += renderTargetDescriptorSize * currBackBuffer;
 	commandList3->OMSetRenderTargets(1, &cdh, true, nullptr);
 
-	float clearColor[] = { 1.0f, 0.0f, 0.0f, 1.0f };
+	float clearColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	commandList3->ClearRenderTargetView(cdh, clearColor, 0, nullptr);
 
 	commandList3->RSSetViewports(1, &viewport);
@@ -289,14 +329,22 @@ void DX12Renderer::frame()
 		// Här inne körs SetPipelineState (first är technique)
 		work.first->enable(this);
 
+		// Bind color
+		MaterialDX12* MatDX12 = reinterpret_cast<MaterialDX12*>(work.first->getMaterial());
+		ConstantBufferDX12* CBCDX12 = reinterpret_cast<ConstantBufferDX12*>(MatDX12->constantBuffers[6]);
+
+		commandList3->SetGraphicsRootConstantBufferView(RS_COLOR, (*CBCDX12->getConstantBufferResource())->GetGPUVirtualAddress());
+		
+
 		// För varje technique som hör ihop med sina meshar
 		for (auto mesh : work.second)
 		{
 			size_t numberElements = mesh->geometryBuffers[0].numElements;
 			
+
 			// Bind translation CBV
-			auto CBDX12 = reinterpret_cast<ConstantBufferDX12*>(mesh->txBuffer);
-			commandList3->SetGraphicsRootConstantBufferView(RS_TRANSLATION, (*CBDX12->getConstantBufferResource())->GetGPUVirtualAddress());
+			auto CBTDX12 = reinterpret_cast<ConstantBufferDX12*>(mesh->txBuffer);
+			commandList3->SetGraphicsRootConstantBufferView(RS_TRANSLATION, (*CBTDX12->getConstantBufferResource())->GetGPUVirtualAddress());
 
 			// Binda texturer här sen
 
@@ -335,6 +383,11 @@ void DX12Renderer::present()
 {
 	swapChain3->Present(0, 0);
 	//SDL_GL_SwapWindow(window);
+}
+
+ID3D12Device5* DX12Renderer::Getdevice5()
+{
+	return this->device5;
 }
 
 void DX12Renderer::WaitForGpu()

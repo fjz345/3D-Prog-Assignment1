@@ -34,7 +34,7 @@ void MaterialDX12::setShader(const std::string& shaderFileName, ShaderType type)
 // this constant buffer will be bound every time we bind the material
 void MaterialDX12::addConstantBuffer(std::string name, unsigned int location)
 {
-	constantBuffers[location] = new ConstantBufferDX12(name, location);
+	// empty because we cant reach the the device here
 }
 
 // location identifies the constant buffer in a unique way

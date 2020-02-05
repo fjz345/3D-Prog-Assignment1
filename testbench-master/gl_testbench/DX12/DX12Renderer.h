@@ -53,6 +53,9 @@ public:
 	void frame();
 	void present();
 
+	ID3D12Device5* Getdevice5();
+
+
 	enum {
 		RS_TEXTURE,
 		RS_POSITION,
@@ -79,6 +82,8 @@ private:
 	SDL_Window* window;
 	HWND wndHandle;
 	ID3D12Device5* device5 = nullptr;
+
+	int abc = 15;
 
 	// Command Interfaces
 	ID3D12CommandQueue* commandQueue = nullptr;
