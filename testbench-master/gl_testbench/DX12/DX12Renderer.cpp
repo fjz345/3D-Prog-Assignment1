@@ -215,6 +215,23 @@ Technique* DX12Renderer::makeTechnique(Material* m, RenderState* r) {
 	for (UINT i = 0; i < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; i++)
 		gpsd.BlendState.RenderTarget[i] = defaultRTdesc;
 
+
+	// Depth descriptor
+	D3D12_DEPTH_STENCIL_DESC dsd = {};
+	dsd.DepthEnable = true;
+	dsd.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	dsd.DepthFunc = D3D12_COMPARISON_FUNC_LESS;	// Om pixels depth är lägre än den gamla så ritas den nya ut
+
+	// TODO: Vad är stencil?
+	dsd.StencilEnable = false;
+	dsd.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK;
+	dsd.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK;
+	const D3D12_DEPTH_STENCILOP_DESC defaultStencilOP{ D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_COMPARISON_FUNC_ALWAYS };
+	dsd.FrontFace = defaultStencilOP;
+	dsd.BackFace = defaultStencilOP;
+
+	gpsd.DepthStencilState = dsd;
+
 	ID3D12PipelineState** PSO = rDX12->GetPSO();
 	auto hr = device5->CreateGraphicsPipelineState(&gpsd,IID_PPV_ARGS(PSO)); // Varför fungerar inte IID_PPV_ARGS(&rDX12->GetPSO())
 
@@ -246,6 +263,8 @@ int DX12Renderer::initialize(unsigned int width, unsigned int height) {
 	CreateFenceAndEventHandle();
 
 	CreateRenderTarget();
+
+	CreateDepthStencil();
 
 	CreateViewport(width, height);
 	
@@ -311,14 +330,21 @@ void DX12Renderer::frame()
 	// TODO: varför CPU? fattar ej helt förra gången
 	D3D12_CPU_DESCRIPTOR_HANDLE cdh = renderTargetsHeap->GetCPUDescriptorHandleForHeapStart();
 	cdh.ptr += renderTargetDescriptorSize * currBackBuffer;
+	//D3D12_CPU_DESCRIPTOR_HANDLE dsvhandle = depthStencilHeap->GetCPUDescriptorHandleForHeapStart();
+	//dsvhandle.ptr += depthStencilDescriptorSize * currBackBuffer;
 	commandList3->OMSetRenderTargets(1, &cdh, true, nullptr);
 
 	float clearColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	commandList3->ClearRenderTargetView(cdh, clearColor, 0, nullptr);
 
+	// Clear Depthbuffer	TODO: Funkar ej
+	//commandList3->ClearDepthStencilView(dsvhandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+
 	commandList3->RSSetViewports(1, &viewport);
 	commandList3->RSSetScissorRects(1, &scissorRect);
 	commandList3->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	// Resetta depthbuffer
 
 	// Körs 4 gånger
 	for (auto work : drawList2)
@@ -583,6 +609,32 @@ void DX12Renderer::CreateRenderTarget()
 		cdh.ptr += renderTargetDescriptorSize;
 	}
 	
+}
+
+void DX12Renderer::CreateDepthStencil()
+{
+	// Fill out descriptor for the depthStencil views
+	D3D12_DESCRIPTOR_HEAP_DESC dhd = {};
+	dhd.NumDescriptors = NUM_SWAP_BUFFERS;
+	dhd.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+
+	auto hr = device5->CreateDescriptorHeap(&dhd, IID_PPV_ARGS(&depthStencilHeap));
+
+	depthStencilDescriptorSize = device5->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+	D3D12_CPU_DESCRIPTOR_HANDLE cdh = depthStencilHeap->GetCPUDescriptorHandleForHeapStart();
+
+	D3D12_DEPTH_STENCIL_VIEW_DESC depthStencilDesc = {};
+	depthStencilDesc.Format = DXGI_FORMAT_D32_FLOAT;
+	depthStencilDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+	depthStencilDesc.Flags = D3D12_DSV_FLAG_NONE;
+	
+	// One DSV for each frame
+	for (UINT n = 0; n < NUM_SWAP_BUFFERS; n++)
+	{
+		device5->CreateDepthStencilView(depthStencilBuffers[n], &depthStencilDesc, cdh);
+		cdh.ptr += depthStencilDescriptorSize;
+	}
+
 }
 
 void DX12Renderer::CreateViewport(unsigned int width, unsigned int height)

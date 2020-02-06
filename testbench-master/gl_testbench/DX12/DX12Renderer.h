@@ -74,6 +74,7 @@ private:
 	void CreateSwapChain();
 	void CreateFenceAndEventHandle();
 	void CreateRenderTarget();
+	void CreateDepthStencil();
 	void CreateViewport(unsigned int width, unsigned int height);
 	void CreateScissorRect(unsigned int width, unsigned int height);
 	void CreateRootSignature();
@@ -119,6 +120,11 @@ private:
 	bool globalWireframeMode = false;
 
 	std::unordered_map<Technique*, std::vector<Mesh*>> drawList2;
+
+	// Depth variables
+	ID3D12DescriptorHeap* depthStencilHeap = nullptr;
+	ID3D12Resource1* depthStencilBuffers[NUM_SWAP_BUFFERS] = {};
+	UINT depthStencilDescriptorSize = 0;
 };
 
 // TODO: Allmänt, nästa steg... Rootsignatures & PSO's, ska man ha 1 RS per pipeline?
