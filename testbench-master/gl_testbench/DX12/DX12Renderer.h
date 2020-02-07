@@ -70,10 +70,13 @@ public:
 
 	void WaitForGpu();
 
+	int screenWidth;
+	int screenHeight;
+
 private:
 	
 
-	void CreateSDLWindow(unsigned int width = 640, unsigned int height = 480);
+	void CreateSDLWindow();
 	void CreateDXDevice();
 	void CreateCommandInterface();
 	void CreateSwapChain();
@@ -129,7 +132,7 @@ private:
 	// Depth variables
 	ID3D12DescriptorHeap* depthStencilHeap = nullptr;
 	ID3D12Resource1* depthStencilBuffers[NUM_SWAP_BUFFERS] = {};
-	UINT depthStencilDescriptorSize = 0;
+	UINT depthStencilDescriptorSize = 0;	
 };
 
 // TODO: Allmänt, nästa steg... Rootsignatures & PSO's, ska man ha 1 RS per pipeline?

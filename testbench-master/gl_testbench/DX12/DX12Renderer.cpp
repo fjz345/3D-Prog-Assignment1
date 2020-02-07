@@ -233,6 +233,7 @@ Technique* DX12Renderer::makeTechnique(Material* m, RenderState* r) {
 	dsd.BackFace = defaultStencilOP;
 
 	gpsd.DepthStencilState = dsd;
+	gpsd.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 
 	ID3D12PipelineState** PSO = rDX12->GetPSO();
 	auto hr = device5->CreateGraphicsPipelineState(&gpsd,IID_PPV_ARGS(PSO)); // Varför fungerar inte IID_PPV_ARGS(&rDX12->GetPSO())
@@ -254,7 +255,9 @@ void DX12Renderer::setWinTitle(const char* title) {
 
 int DX12Renderer::initialize(unsigned int width, unsigned int height) {
 
-	CreateSDLWindow(width, height);
+	this->screenWidth = width;
+	this->screenHeight = height;
+	CreateSDLWindow();
 
 	CreateDXDevice();
 
@@ -309,9 +312,10 @@ void DX12Renderer::frame()
 	// Set root signature
 	commandList3->SetGraphicsRootSignature(rootSig);
 
+	commandList3->SetDescriptorHeaps(1, &descriptorHeap);
 	// Set root descriptor table TODO: hjälp, förståelse
-	//commandList3->SetGraphicsRootDescriptorTable(RS_TEXTURE,
-	//	descriptorHeap->GetGPUDescriptorHandleForHeapStart());
+	commandList3->SetGraphicsRootDescriptorTable(RS_TEXTURE,
+		descriptorHeap->GetGPUDescriptorHandleForHeapStart());
 	
 	// Sätter 1 triangel data.
 	commandList3->SetGraphicsRootShaderResourceView(RS_POSITION,
@@ -332,15 +336,15 @@ void DX12Renderer::frame()
 	// TODO: varför CPU? fattar ej helt förra gången
 	D3D12_CPU_DESCRIPTOR_HANDLE cdh = renderTargetsHeap->GetCPUDescriptorHandleForHeapStart();
 	cdh.ptr += renderTargetDescriptorSize * currBackBuffer;
-	//D3D12_CPU_DESCRIPTOR_HANDLE dsvhandle = depthStencilHeap->GetCPUDescriptorHandleForHeapStart();
-	//dsvhandle.ptr += depthStencilDescriptorSize * currBackBuffer;
-	commandList3->OMSetRenderTargets(1, &cdh, true, nullptr);
+	D3D12_CPU_DESCRIPTOR_HANDLE dsvhandle = depthStencilHeap->GetCPUDescriptorHandleForHeapStart();
+	dsvhandle.ptr += depthStencilDescriptorSize * currBackBuffer;
+	commandList3->OMSetRenderTargets(1, &cdh, true, &dsvhandle);
 
-	float clearColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	float clearColor[] = { 0.0f, 0.1f, 0.1f, 1.0f };
 	commandList3->ClearRenderTargetView(cdh, clearColor, 0, nullptr);
 
 	// Clear Depthbuffer	TODO: Funkar ej
-	//commandList3->ClearDepthStencilView(dsvhandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+	commandList3->ClearDepthStencilView(dsvhandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
 	commandList3->RSSetViewports(1, &viewport);
 	commandList3->RSSetScissorRects(1, &scissorRect);
@@ -454,7 +458,7 @@ void DX12Renderer::WaitForGpu()
 	}
 }
 
-void DX12Renderer::CreateSDLWindow(unsigned int width, unsigned int height)
+void DX12Renderer::CreateSDLWindow()
 {
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
 	{
@@ -462,7 +466,7 @@ void DX12Renderer::CreateSDLWindow(unsigned int width, unsigned int height)
 		exit(-1);
 	}
 
-	window = SDL_CreateWindow("DirectX12", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_SHOWN);
+	window = SDL_CreateWindow("DirectX12", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, this->screenWidth, this->screenHeight, SDL_WINDOW_SHOWN);
 
 	SDL_SysWMinfo info;
 	SDL_VERSION(&info.version); /* initialize info structure with SDL version info */
@@ -644,10 +648,42 @@ void DX12Renderer::CreateDepthStencil()
 	depthStencilDesc.Format = DXGI_FORMAT_D32_FLOAT;
 	depthStencilDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 	depthStencilDesc.Flags = D3D12_DSV_FLAG_NONE;
+
+	// TODO: Skapar heap properties efter vi har skapat heapen???????????????????
+	D3D12_HEAP_PROPERTIES heapProperties = {};
+	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+	heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	heapProperties.CreationNodeMask = 1; //used when multi-gpu
+	heapProperties.VisibleNodeMask = 1; //used when multi-gpu
+	heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+
+	D3D12_RESOURCE_DESC resourceDesc = {};
+	resourceDesc.Format = DXGI_FORMAT_D32_FLOAT;
+	resourceDesc.Width = this->screenWidth;
+	resourceDesc.Height = this->screenHeight;
+	resourceDesc.DepthOrArraySize = 1;
+	resourceDesc.MipLevels = 0;
+	resourceDesc.SampleDesc.Count = 1;
+	resourceDesc.SampleDesc.Quality = 0;
+	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+	
+	D3D12_CLEAR_VALUE cv = {};
+	cv.DepthStencil.Depth = 1;
+	cv.Format = DXGI_FORMAT_D32_FLOAT;
 	
 	// One DSV for each frame
 	for (UINT n = 0; n < NUM_SWAP_BUFFERS; n++)
 	{
+		device5->CreateCommittedResource(
+			&heapProperties,
+			D3D12_HEAP_FLAG_NONE,
+			&resourceDesc,
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			&cv,
+			IID_PPV_ARGS(&depthStencilBuffers[n])
+		);
 		device5->CreateDepthStencilView(depthStencilBuffers[n], &depthStencilDesc, cdh);
 		cdh.ptr += depthStencilDescriptorSize;
 	}
@@ -718,8 +754,16 @@ void DX12Renderer::CreateRootSignature()
 	rsDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_NONE;	// We dont use input layout... 
 	rsDesc.NumParameters = ARRAYSIZE(rootParam);
 	rsDesc.pParameters = rootParam;
-	rsDesc.NumStaticSamplers = 0; // TODO: Create Static Sampler
-	rsDesc.pStaticSamplers = nullptr;	// Vad händer här?
+	rsDesc.NumStaticSamplers = 1; // TODO: Create Static Sampler
+	D3D12_STATIC_SAMPLER_DESC ssd{};
+	ssd.ShaderRegister = 0;
+	ssd.Filter = D3D12_FILTER_ANISOTROPIC;
+	ssd.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	ssd.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	ssd.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	ssd.ComparisonFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+	ssd.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+	rsDesc.pStaticSamplers = &ssd;	// Vad händer här?
 
 	ID3DBlob* sBlob;
 
