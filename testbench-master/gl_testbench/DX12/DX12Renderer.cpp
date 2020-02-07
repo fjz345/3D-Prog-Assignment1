@@ -31,7 +31,9 @@ Mesh* DX12Renderer::makeMesh() {
 
 Texture2D* DX12Renderer::makeTexture2D()
 {
-	return (Texture2D*)new Texture2DDX12();
+	Texture2DDX12* texture = new Texture2DDX12(this);
+
+	return (Texture2D*)texture;
 }
 
 Sampler2D* DX12Renderer::makeSampler2D()
@@ -309,7 +311,7 @@ void DX12Renderer::frame()
 
 	// Set root descriptor table TODO: hjälp, förståelse
 	//commandList3->SetGraphicsRootDescriptorTable(RS_TEXTURE,
-	//	descriptorHeaps[currBackBuffer]->GetGPUDescriptorHandleForHeapStart());
+	//	descriptorHeap->GetGPUDescriptorHandleForHeapStart());
 	
 	// Sätter 1 triangel data.
 	commandList3->SetGraphicsRootShaderResourceView(RS_POSITION,
@@ -414,6 +416,21 @@ void DX12Renderer::present()
 ID3D12Device5* DX12Renderer::Getdevice5()
 {
 	return this->device5;
+}
+
+ID3D12CommandQueue* DX12Renderer::GetCommandQueue()
+{
+	return this->commandQueue;
+}
+
+ID3D12GraphicsCommandList3* DX12Renderer::GetCommandList()
+{
+	return this->commandList3;
+}
+
+ID3D12DescriptorHeap* DX12Renderer::GetDH()
+{
+	return descriptorHeap;
 }
 
 void DX12Renderer::WaitForGpu()
@@ -722,14 +739,11 @@ void DX12Renderer::CreateRootSignature()
 
 void DX12Renderer::CreateDescriptorHeap()
 {
-	for (int i = 0; i < NUM_SWAP_BUFFERS; i++)
-	{
-		D3D12_DESCRIPTOR_HEAP_DESC heapDescriptorDesc = {};
-		heapDescriptorDesc.NumDescriptors = 1; // Endast 1 textur i programmet
-		heapDescriptorDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-		heapDescriptorDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-		device5->CreateDescriptorHeap(&heapDescriptorDesc, IID_PPV_ARGS(&descriptorHeaps[i]));
-	}
+	D3D12_DESCRIPTOR_HEAP_DESC heapDescriptorDesc = {};
+	heapDescriptorDesc.NumDescriptors = 1; // Endast 1 textur i programmet
+	heapDescriptorDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	heapDescriptorDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	device5->CreateDescriptorHeap(&heapDescriptorDesc, IID_PPV_ARGS(&descriptorHeap));
 }
 
 void DX12Renderer::setClearColor(float r, float g, float b, float a)

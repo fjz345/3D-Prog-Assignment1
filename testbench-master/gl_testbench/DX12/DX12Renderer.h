@@ -54,6 +54,9 @@ public:
 	void present();
 
 	ID3D12Device5* Getdevice5();
+	ID3D12CommandQueue* GetCommandQueue();
+	ID3D12GraphicsCommandList3* GetCommandList();
+	ID3D12DescriptorHeap* GetDH();
 
 
 	enum {
@@ -65,8 +68,10 @@ public:
 		RS_TRANSLATION
 	};
 
-private:
 	void WaitForGpu();
+
+private:
+	
 
 	void CreateSDLWindow(unsigned int width = 640, unsigned int height = 480);
 	void CreateDXDevice();
@@ -113,7 +118,7 @@ private:
 	ID3D12RootSignature* rootSig;
 
 	// TODO: Varför 1 vertexBufferResource och 2(NUM_SWAP_BUFFERS) constantBufferResource
-	ID3D12DescriptorHeap* descriptorHeaps[NUM_SWAP_BUFFERS];
+	ID3D12DescriptorHeap* descriptorHeap;
 	int numVertexBuffers = 0;
 	int numConstantBuffers = 0;
 	
