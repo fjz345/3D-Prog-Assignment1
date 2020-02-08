@@ -19,7 +19,9 @@ VS_OUT VS_main( uint vID : SV_VertexID )
 	VS_OUT output = (VS_OUT)0;
 	float4 position = float4(vbPos[vID].xyz,1.0);
 
-	output.pos = position + float4(x,y,-z,w);
+	// Opengl depth is between -1 -> 1 (-1 är närmast kameran)
+	// DX depth between 0 -> 1
+	output.pos = position + float4(x,y,(1 + z)/2,w);
 	output.uv = vbUV[vID];
 	return output;
 }

@@ -343,21 +343,17 @@ void DX12Renderer::frame()
 	float clearColor[] = { 0.0f, 0.1f, 0.1f, 1.0f };
 	commandList3->ClearRenderTargetView(cdh, clearColor, 0, nullptr);
 
-	// Clear Depthbuffer	TODO: Funkar ej
+	// Clear Depthbuffer
 	commandList3->ClearDepthStencilView(dsvhandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
 	commandList3->RSSetViewports(1, &viewport);
 	commandList3->RSSetScissorRects(1, &scissorRect);
 	commandList3->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	// Resetta depthbuffer
 
 	// Körs 4 gånger
 	for (auto work : drawList2)
 	{
-		// Kanske vänta på GPU...? Se sista raden innan nästa iteration med eexecuteCommandList
-
-
 		// Här inne körs SetPipelineState (first är technique)
 		work.first->enable(this);
 
@@ -367,32 +363,18 @@ void DX12Renderer::frame()
 
 		commandList3->SetGraphicsRootConstantBufferView(RS_COLOR, (*CBCDX12->getConstantBufferResource())->GetGPUVirtualAddress());
 		
-
 		// För varje technique som hör ihop med sina meshar
 		for (auto mesh : work.second)
 		{
 			size_t numberElements = mesh->geometryBuffers[0].numElements;
 			
-
 			// Bind translation CBV
 			auto CBTDX12 = reinterpret_cast<ConstantBufferDX12*>(mesh->txBuffer);
 			commandList3->SetGraphicsRootConstantBufferView(RS_TRANSLATION, (*CBTDX12->getConstantBufferResource())->GetGPUVirtualAddress());
 
-			// Binda texturer här sen
 
-			// Binda vertexbuffers (vet ej hur vi gör detta nu när vi inte har input layout)
-			for (auto element : mesh->geometryBuffers) 
-			{
-				
-			}
-			// Fixa constantbuffers...
-
-			// Tror Draw ska ske här
-
-			commandList3->DrawInstanced(3, 1, 0, 0);
+			commandList3->DrawInstanced(numberElements, 1, 0, 0);
 		}
-
-		
 	}
 
 	// Ändra state på front/backbuffer

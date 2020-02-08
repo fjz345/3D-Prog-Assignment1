@@ -108,6 +108,7 @@ void updateScene()
 				i * (-1.0 / TOTAL_PLACES),
 				0.0
 			};
+
 			scene[i]->txBuffer->setData(&trans, sizeof(trans), scene[i]->technique->getMaterial(), TRANSLATION);
 		}
 		// just to make them move...
@@ -310,7 +311,6 @@ int main(int argc, char *argv[])
 	initialiseTestbench();
 	run();
 	shutdown();
-
 
 	return 0;
 };
